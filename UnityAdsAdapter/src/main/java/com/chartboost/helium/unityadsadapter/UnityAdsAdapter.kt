@@ -183,7 +183,6 @@ class UnityAdsAdapter : PartnerAdapter {
                         Result.success(
                             PartnerAd(
                                 ad = bannerAdView,
-                                inlineView = null,
                                 details = emptyMap(),
                                 request = request,
                             )
@@ -193,7 +192,6 @@ class UnityAdsAdapter : PartnerAdapter {
                     listener.onPartnerAdImpression(
                         PartnerAd(
                             ad = bannerAdView,
-                            inlineView = null,
                             details = emptyMap(),
                             request = request
                         )
@@ -204,7 +202,6 @@ class UnityAdsAdapter : PartnerAdapter {
                     listener.onPartnerAdClicked(
                         PartnerAd(
                             ad = bannerAdView,
-                            inlineView = null,
                             details = emptyMap(),
                             request = request,
                         )
@@ -253,7 +250,6 @@ class UnityAdsAdapter : PartnerAdapter {
                         Result.success(
                             PartnerAd(
                                 ad = null,
-                                inlineView = null,
                                 details = emptyMap(),
                                 request = request,
                             )
@@ -430,20 +426,22 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Save the current GDPR applicability state for later use.
      *
-     * @param gdprApplies The current GDPR applicability state.
+     * @param context The current [Context].
+     * @param gdprApplies True if GDPR applies, false otherwise.
      */
-    override fun setGdprApplies(gdprApplies: Boolean) {
+    override fun setGdprApplies(context: Context, gdprApplies: Boolean) {
         this.gdprApplies = gdprApplies
     }
 
     /**
      * Notify Unity Ads of the user's GDPR consent status, if applicable.
      *
+     * @param context The current [Context].
      * @param gdprConsentStatus The user's current GDPR consent status.
      */
-    override fun setGdprConsentStatus(gdprConsentStatus: GdprConsentStatus) {
+    override fun setGdprConsentStatus(context: Context, gdprConsentStatus: GdprConsentStatus) {
         if (gdprApplies) {
-            MetaData(HeliumSdk.getContext()).apply {
+            MetaData(context).apply {
                 this["gdpr.consent"] = gdprConsentStatus == GdprConsentStatus.GDPR_CONSENT_GRANTED
                 commit()
             }
@@ -453,23 +451,16 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Notify Unity Ads of the user's CCPA consent status, if applicable.
      *
-     * @param privacyString The CCPA privacy String.
+     * @param context The current [Context].
+     * @param hasGivenCcpaConsent True if the user has given CCPA consent, false otherwise.
+     * @param privacyString The CCPA privacy string.
      */
-    override fun setCcpaPrivacyString(privacyString: String?) {
-        val hasGivenCcpaConsent = privacyString?.length?.let {
-            it.takeIf { it > 2 }?.let {
-                when (privacyString[2]) {
-                    'Y' -> false // The user opts out of the sale of personal data, which means they did not consent.
-                    'N' -> true // The user opts in to the sale of personal data, which means they consent.
-                    else -> {
-                        // CCPA does not apply
-                        return
-                    }
-                }
-            } ?: return
-        } ?: return
-
-        val gdprMetaData = MetaData(HeliumSdk.getContext())
+    override fun setCcpaConsent(
+        context: Context,
+        hasGivenCcpaConsent: Boolean,
+        privacyString: String?
+    ) {
+        val gdprMetaData = MetaData(context)
         gdprMetaData["privacy.consent"] = hasGivenCcpaConsent
         gdprMetaData.commit()
     }
@@ -477,9 +468,10 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Notify Unity Ads of the COPPA subjectivity.
      *
-     * @param isSubjectToCoppa Whether the user is subject to COPPA.
+     * @param context The current [Context].
+     * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
      */
-    override fun setUserSubjectToCoppa(isSubjectToCoppa: Boolean) {
+    override fun setUserSubjectToCoppa(context: Context, isSubjectToCoppa: Boolean) {
         val coppaMetaData = MetaData(HeliumSdk.getContext())
 
         // True if the user is over the age limit, meaning that the subject is not subject to COPPA.
