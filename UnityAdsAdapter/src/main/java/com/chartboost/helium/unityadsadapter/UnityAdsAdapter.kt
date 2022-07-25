@@ -1,4 +1,4 @@
-package com.chartboost.heliumsdk.unityadsadapter
+package com.chartboost.helium.unityadsadapter
 
 import android.app.Activity
 import android.content.Context
@@ -47,7 +47,7 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Unity Ads does not have a "ready" check, so we need to manually keep track of it, keyed by the Unity placement ID.
      */
-    private var placementReadinessTracker = mutableMapOf<String, Boolean>()
+    private var readinessTracker = mutableMapOf<String, Boolean>()
 
     /**
      * Get the Unity Ads adapter version.
@@ -57,7 +57,7 @@ class UnityAdsAdapter : PartnerAdapter {
      * of the partner SDK, and `Adapter` is the version of the adapter.
      */
     override val adapterVersion: String
-        get() = "BuildConfig.HELIUM_UNITYADS_ADAPTER_VERSION"
+        get() = BuildConfig.VERSION_NAME
 
     /**
      * Get the Unity Ads SDK version.
@@ -87,7 +87,7 @@ class UnityAdsAdapter : PartnerAdapter {
         context: Context,
         partnerConfiguration: PartnerConfiguration
     ): Result<Unit> {
-        placementReadinessTracker.clear()
+        readinessTracker.clear()
 
         partnerConfiguration.credentials[GAME_ID_KEY]?.let { gameId ->
             setMediationMetadata()
@@ -144,7 +144,7 @@ class UnityAdsAdapter : PartnerAdapter {
         request: AdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
-        placementReadinessTracker[request.partnerPlacement] = false
+        readinessTracker[request.partnerPlacement] = false
 
         return when (request.format) {
             AdFormat.BANNER -> loadBannerAd(context, request, partnerAdListener)
@@ -177,16 +177,7 @@ class UnityAdsAdapter : PartnerAdapter {
 
             ad.listener = object : BannerView.Listener() {
                 override fun onBannerLoaded(bannerAdView: BannerView) {
-                    placementReadinessTracker[request.partnerPlacement] = true
-
-                    listener.onPartnerAdImpression(
-                        PartnerAd(
-                            ad = bannerAdView,
-                            inlineView = null,
-                            details = emptyMap(),
-                            request = request
-                        )
-                    )
+                    readinessTracker[request.partnerPlacement] = true
 
                     continuation.resume(
                         Result.success(
@@ -196,6 +187,15 @@ class UnityAdsAdapter : PartnerAdapter {
                                 details = emptyMap(),
                                 request = request,
                             )
+                        )
+                    )
+
+                    listener.onPartnerAdImpression(
+                        PartnerAd(
+                            ad = bannerAdView,
+                            inlineView = null,
+                            details = emptyMap(),
+                            request = request
                         )
                     )
                 }
@@ -215,7 +215,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     bannerAdView: BannerView,
                     errorInfo: BannerErrorInfo
                 ) {
-                    placementReadinessTracker[request.partnerPlacement] = false
+                    readinessTracker[request.partnerPlacement] = false
 
                     LogController.e(
                         "$TAG Unity Ads failed to load banner ads. Error: ${errorInfo.errorCode}. " +
@@ -247,7 +247,7 @@ class UnityAdsAdapter : PartnerAdapter {
         return suspendCoroutine { continuation ->
             UnityAds.load(request.partnerPlacement, object : IUnityAdsLoadListener {
                 override fun onUnityAdsAdLoaded(placementId: String) {
-                    placementReadinessTracker[request.partnerPlacement] = true
+                    readinessTracker[request.partnerPlacement] = true
 
                     continuation.resume(
                         Result.success(
@@ -266,7 +266,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     error: UnityAds.UnityAdsLoadError,
                     message: String
                 ) {
-                    placementReadinessTracker[request.partnerPlacement] = false
+                    readinessTracker[request.partnerPlacement] = false
 
                     LogController.e(
                         "$TAG Unity Ads failed to load fullscreen ads. Error: ${error.name}. " +
@@ -317,7 +317,7 @@ class UnityAdsAdapter : PartnerAdapter {
             return Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL))
         }
 
-        placementReadinessTracker[partnerAd.request.partnerPlacement] = false
+        readinessTracker[partnerAd.request.partnerPlacement] = false
 
         return suspendCoroutine { continuation ->
             UnityAds.show(
@@ -337,13 +337,14 @@ class UnityAdsAdapter : PartnerAdapter {
                     }
 
                     override fun onUnityAdsShowStart(placementId: String) {
+                        continuation.resume(Result.success(partnerAd))
+
                         listener?.onPartnerAdImpression(partnerAd) ?: run {
                             LogController.e(
                                 "$TAG Unable to fire onPartnerAdImpression for Unity Ads adapter. " +
                                         "Listener is null."
                             )
                         }
-                        continuation.resume(Result.success(partnerAd))
                     }
 
                     override fun onUnityAdsShowClick(placementId: String) {
@@ -359,7 +360,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         placementId: String,
                         state: UnityAds.UnityAdsShowCompletionState
                     ) {
-                        placementReadinessTracker[partnerAd.request.partnerPlacement] = false
+                        readinessTracker[partnerAd.request.partnerPlacement] = false
                         if (partnerAd.request.format == AdFormat.REWARDED &&
                             state == UnityAds.UnityAdsShowCompletionState.COMPLETED
                         ) {
@@ -392,11 +393,11 @@ class UnityAdsAdapter : PartnerAdapter {
     private fun readyToShow(context: Context, placement: String): Boolean {
         return when {
             context !is Activity -> {
-                LogController.e("$TAG Unity Ads failed to show ads. Context is not an Activity instance.")
+                LogController.e("$TAG Unity Ads cannot show ads. Context is not an Activity instance.")
                 false
             }
-            placementReadinessTracker[placement] != true -> {
-                LogController.e("$TAG Unity Ads failed to show ads. Ad is not ready.")
+            readinessTracker[placement] != true -> {
+                LogController.e("$TAG Unity Ads cannot show ads. Ad is not ready.")
                 false
             }
             else -> true
@@ -412,7 +413,7 @@ class UnityAdsAdapter : PartnerAdapter {
      */
     override suspend fun invalidate(partnerAd: PartnerAd): Result<PartnerAd> {
         listeners.remove(partnerAd.request.heliumPlacement)
-        placementReadinessTracker.remove(partnerAd.request.partnerPlacement)
+        readinessTracker.remove(partnerAd.request.partnerPlacement)
 
         // Only invalidate banner ads.
         // For fullscreen ads, since Unity Ads does not provide an ad in the load callback, we
@@ -494,7 +495,7 @@ class UnityAdsAdapter : PartnerAdapter {
         val mediationMetaData = MediationMetaData(HeliumSdk.getContext())
         mediationMetaData.setName("Helium")
         mediationMetaData.setVersion(HeliumSdk.getVersion())
-        mediationMetaData["helium_adapter_version"] = "BuildConfig.HELIUM_UNITYADS_ADAPTER_VERSION"
+        mediationMetaData["helium_adapter_version"] = BuildConfig.VERSION_NAME
         mediationMetaData.commit()
     }
 
