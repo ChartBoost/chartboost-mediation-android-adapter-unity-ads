@@ -1,4 +1,4 @@
-package com.chartboost.helium.unityadsadapter
+package com.chartboost.heliumsdk.unityadsadapter
 
 import android.app.Activity
 import android.content.Context
@@ -21,12 +21,12 @@ import kotlin.coroutines.suspendCoroutine
 /**
  * The Helium Unity Ads Adapter.
  */
-class UnityAdsAdapter : PartnerAdapter {
+class UnityAdsAdapter_New : PartnerAdapter {
     companion object {
         /**
          * The tag used for log messages.
          */
-        private const val TAG = "[UnityAdsAdapter]"
+        private const val TAG = "[UnityAdsAdapter_New]"
 
         /**
          * Key for parsing the Unity Ads game ID.
@@ -57,7 +57,7 @@ class UnityAdsAdapter : PartnerAdapter {
      * of the partner SDK, and `Adapter` is the version of the adapter.
      */
     override val adapterVersion: String
-        get() = BuildConfig.VERSION_NAME
+        get() = "BuildConfig.VERSION_NAME" // TODO: Uncomment
 
     /**
      * Get the Unity Ads SDK version.
@@ -487,7 +487,7 @@ class UnityAdsAdapter : PartnerAdapter {
         val mediationMetaData = MediationMetaData(HeliumSdk.getContext())
         mediationMetaData.setName("Helium")
         mediationMetaData.setVersion(HeliumSdk.getVersion())
-        mediationMetaData["helium_adapter_version"] = BuildConfig.VERSION_NAME
+        mediationMetaData["helium_adapter_version"] = adapterVersion
         mediationMetaData.commit()
     }
 
