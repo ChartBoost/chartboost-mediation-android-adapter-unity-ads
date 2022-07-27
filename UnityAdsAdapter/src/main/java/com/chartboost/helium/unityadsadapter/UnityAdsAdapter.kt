@@ -1,4 +1,4 @@
-package com.chartboost.heliumsdk.unityadsadapter
+package com.chartboost.helium.unityadsadapter
 
 import android.app.Activity
 import android.content.Context
@@ -21,12 +21,12 @@ import kotlin.coroutines.suspendCoroutine
 /**
  * The Helium Unity Ads Adapter.
  */
-class UnityAdsAdapter_New : PartnerAdapter {
+class UnityAdsAdapter : PartnerAdapter {
     companion object {
         /**
          * The tag used for log messages.
          */
-        private const val TAG = "[UnityAdsAdapter_New]"
+        private val TAG = "[${this::class.java.simpleName}]"
 
         /**
          * Key for parsing the Unity Ads game ID.
