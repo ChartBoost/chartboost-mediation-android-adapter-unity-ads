@@ -57,7 +57,7 @@ class UnityAdsAdapter : PartnerAdapter {
      * of the partner SDK, and `Adapter` is the version of the adapter.
      */
     override val adapterVersion: String
-        get() = "BuildConfig.VERSION_NAME" // TODO: Uncomment
+        get() = BuildConfig.HELIUM_UNITY_ADS_ADAPTER_VERSION
 
     /**
      * Get the Unity Ads SDK version.
