@@ -188,14 +188,6 @@ class UnityAdsAdapter : PartnerAdapter {
                             )
                         )
                     )
-
-                    listener.onPartnerAdImpression(
-                        PartnerAd(
-                            ad = bannerAdView,
-                            details = emptyMap(),
-                            request = request
-                        )
-                    )
                 }
 
                 override fun onBannerClick(bannerAdView: BannerView) {
@@ -334,13 +326,6 @@ class UnityAdsAdapter : PartnerAdapter {
 
                     override fun onUnityAdsShowStart(placementId: String) {
                         continuation.resume(Result.success(partnerAd))
-
-                        listener?.onPartnerAdImpression(partnerAd) ?: run {
-                            LogController.e(
-                                "$TAG Unable to fire onPartnerAdImpression for Unity Ads adapter. " +
-                                        "Listener is null."
-                            )
-                        }
                     }
 
                     override fun onUnityAdsShowClick(placementId: String) {
