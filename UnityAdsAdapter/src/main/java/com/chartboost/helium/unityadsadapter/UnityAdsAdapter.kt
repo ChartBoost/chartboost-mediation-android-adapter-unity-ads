@@ -24,6 +24,16 @@ import kotlin.coroutines.suspendCoroutine
 class UnityAdsAdapter : PartnerAdapter {
     companion object {
         /**
+         * Flag that can optionally be set to enable Unity Ads debug mode.
+         */
+        public var debugMode = UnityAds.getDebugMode()
+            set(value) {
+                field = value
+                UnityAds.setDebugMode(value)
+                LogController.d("$TAG Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.")
+            }
+
+        /**
          * The tag used for log messages.
          */
         private val TAG = "[${this::class.java.simpleName}]"
