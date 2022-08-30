@@ -30,13 +30,8 @@ class UnityAdsAdapter : PartnerAdapter {
             set(value) {
                 field = value
                 UnityAds.setDebugMode(value)
-                LogController.d("$TAG Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.")
+                LogController.d("Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.")
             }
-
-        /**
-         * The tag used for log messages.
-         */
-        private val TAG = "[${this::class.java.simpleName}]"
 
         /**
          * Key for parsing the Unity Ads game ID.
@@ -109,20 +104,20 @@ class UnityAdsAdapter : PartnerAdapter {
                     false,
                     object : IUnityAdsInitializationListener {
                         override fun onInitializationComplete() {
-                            continuation.resume(Result.success(LogController.i("$TAG Unity Ads successfully initialized.")))
+                            continuation.resume(Result.success(LogController.i("Unity Ads successfully initialized.")))
                         }
 
                         override fun onInitializationFailed(
                             error: UnityAds.UnityAdsInitializationError?,
                             message: String?
                         ) {
-                            LogController.e("$TAG Unity Ads failed to initialize. Error: $error. Message: $message")
+                            LogController.e("Unity Ads failed to initialize. Error: $error. Message: $message")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                         }
                     })
             }
         } ?: run {
-            LogController.e("$TAG Unity Ads failed to initialize. Missing game_id value.")
+            LogController.e("Unity Ads failed to initialize. Missing game_id value.")
             return Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED))
         }
     }
@@ -175,7 +170,7 @@ class UnityAdsAdapter : PartnerAdapter {
         listener: PartnerAdListener
     ): Result<PartnerAd> {
         if (context !is Activity) {
-            LogController.e("$TAG Unity Ads failed to load banner ads. Context is not an Activity instance.")
+            LogController.e("Unity Ads failed to load banner ads. Context is not an Activity instance.")
             return Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
 
@@ -217,7 +212,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     readinessTracker[request.partnerPlacement] = false
 
                     LogController.e(
-                        "$TAG Unity Ads failed to load banner ads. Error: ${errorInfo.errorCode}. " +
+                        "Unity Ads failed to load banner ads. Error: ${errorInfo.errorCode}. " +
                                 "Message: ${errorInfo.errorMessage}"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
@@ -267,7 +262,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     readinessTracker[request.partnerPlacement] = false
 
                     LogController.e(
-                        "$TAG Unity Ads failed to load fullscreen ads. Error: ${error.name}. " +
+                        "Unity Ads failed to load fullscreen ads. Error: ${error.name}. " +
                                 "Message: $message"
                     )
 
@@ -328,7 +323,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         message: String
                     ) {
                         LogController.e(
-                            "$TAG Unity Ads failed to show fullscreen ads. Error: ${error.name}. " +
+                            "Unity Ads failed to show fullscreen ads. Error: ${error.name}. " +
                                     "Message: $message"
                         )
                         continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
@@ -341,7 +336,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     override fun onUnityAdsShowClick(placementId: String) {
                         listener?.onPartnerAdClicked(partnerAd) ?: run {
                             LogController.e(
-                                "$TAG Unable to fire onPartnerAdClicked for Unity Ads adapter. " +
+                                "Unable to fire onPartnerAdClicked for Unity Ads adapter. " +
                                         "Listener is null."
                             )
                         }
@@ -357,13 +352,13 @@ class UnityAdsAdapter : PartnerAdapter {
                         ) {
                             listener?.onPartnerAdRewarded(partnerAd, Reward(0, " "))
                                 ?: LogController.e(
-                                    "$TAG Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
+                                    "Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
                                             "Listener is null."
                                 )
                         }
 
                         listener?.onPartnerAdDismissed(partnerAd, null) ?: LogController.e(
-                            "$TAG Unable to fire onPartnerAdClosed for Unity Ads adapter. " +
+                            "Unable to fire onPartnerAdClosed for Unity Ads adapter. " +
                                     "Listener is null."
                         )
                     }
@@ -384,11 +379,11 @@ class UnityAdsAdapter : PartnerAdapter {
     private fun readyToShow(context: Context, placement: String): Boolean {
         return when {
             context !is Activity -> {
-                LogController.e("$TAG Unity Ads cannot show ads. Context is not an Activity instance.")
+                LogController.e("Unity Ads cannot show ads. Context is not an Activity instance.")
                 false
             }
             readinessTracker[placement] != true -> {
-                LogController.e("$TAG Unity Ads cannot show ads. Ad is not ready.")
+                LogController.e("Unity Ads cannot show ads. Ad is not ready.")
                 false
             }
             else -> true
