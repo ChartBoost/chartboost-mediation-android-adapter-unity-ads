@@ -5,7 +5,10 @@ import android.content.Context
 import android.util.Size
 import com.chartboost.heliumsdk.HeliumSdk
 import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.LogController
+import com.chartboost.heliumsdk.utils.PartnerLogController
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterFailureEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterSuccessEvents.*
 import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.IUnityAdsLoadListener
 import com.unity3d.ads.IUnityAdsShowListener
@@ -30,7 +33,10 @@ class UnityAdsAdapter : PartnerAdapter {
             set(value) {
                 field = value
                 UnityAds.setDebugMode(value)
-                LogController.d("Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.")
+                PartnerLogController.log(
+                    CUSTOM,
+                    "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}."
+                )
             }
 
         /**
@@ -92,6 +98,8 @@ class UnityAdsAdapter : PartnerAdapter {
         context: Context,
         partnerConfiguration: PartnerConfiguration
     ): Result<Unit> {
+        PartnerLogController.log(SETUP_STARTED)
+
         readinessTracker.clear()
 
         partnerConfiguration.credentials[GAME_ID_KEY]?.let { gameId ->
@@ -104,20 +112,29 @@ class UnityAdsAdapter : PartnerAdapter {
                     false,
                     object : IUnityAdsInitializationListener {
                         override fun onInitializationComplete() {
-                            continuation.resume(Result.success(LogController.i("Unity Ads successfully initialized.")))
+                            continuation.resume(
+                                Result.success(
+                                    PartnerLogController.log(
+                                        SETUP_SUCCEEDED
+                                    )
+                                )
+                            )
                         }
 
                         override fun onInitializationFailed(
                             error: UnityAds.UnityAdsInitializationError?,
                             message: String?
                         ) {
-                            LogController.e("Unity Ads failed to initialize. Error: $error. Message: $message")
+                            PartnerLogController.log(
+                                SETUP_FAILED,
+                                "Error: $error. Message: $message"
+                            )
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                         }
                     })
             }
         } ?: run {
-            LogController.e("Unity Ads failed to initialize. Missing game_id value.")
+            PartnerLogController.log(SETUP_FAILED, "Missing game_id value.")
             return Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED))
         }
     }
@@ -133,22 +150,27 @@ class UnityAdsAdapter : PartnerAdapter {
     override suspend fun fetchBidderInformation(
         context: Context,
         request: PreBidRequest
-    ) = emptyMap<String, String>()
+    ): Map<String, String> {
+        PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
+        PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
+        return emptyMap()
+    }
 
     /**
      * Attempt to load a Unity Ads ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     override suspend fun load(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
+        PartnerLogController.log(LOAD_STARTED)
         readinessTracker[request.partnerPlacement] = false
 
         return when (request.format) {
@@ -161,16 +183,16 @@ class UnityAdsAdapter : PartnerAdapter {
      * Attempt to load a Unity Ads banner.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      */
     private suspend fun loadBannerAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
         if (context !is Activity) {
-            LogController.e("Unity Ads failed to load banner ads. Context is not an Activity instance.")
+            PartnerLogController.log(LOAD_FAILED, "Context is not an Activity instance.")
             return Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
 
@@ -184,6 +206,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 override fun onBannerLoaded(bannerAdView: BannerView) {
                     readinessTracker[request.partnerPlacement] = true
 
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(
                             PartnerAd(
@@ -196,6 +219,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 }
 
                 override fun onBannerClick(bannerAdView: BannerView) {
+                    PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
                         PartnerAd(
                             ad = bannerAdView,
@@ -211,8 +235,8 @@ class UnityAdsAdapter : PartnerAdapter {
                 ) {
                     readinessTracker[request.partnerPlacement] = false
 
-                    LogController.e(
-                        "Unity Ads failed to load banner ads. Error: ${errorInfo.errorCode}. " +
+                    PartnerLogController.log(
+                        LOAD_FAILED, "Error: ${errorInfo.errorCode}. " +
                                 "Message: ${errorInfo.errorMessage}"
                     )
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
@@ -228,11 +252,11 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Attempt to load a Unity Ads fullscreen ad. This method supports both interstitial and rewarded ads.
      *
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param listener A [PartnerAdListener] to notify Helium of ad events.
      */
     private suspend fun loadFullscreenAd(
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
         // Save the listener for later use.
@@ -243,6 +267,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 override fun onUnityAdsAdLoaded(placementId: String) {
                     readinessTracker[request.partnerPlacement] = true
 
+                    PartnerLogController.log(LOAD_SUCCEEDED)
                     continuation.resume(
                         Result.success(
                             PartnerAd(
@@ -261,11 +286,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 ) {
                     readinessTracker[request.partnerPlacement] = false
 
-                    LogController.e(
-                        "Unity Ads failed to load fullscreen ads. Error: ${error.name}. " +
-                                "Message: $message"
-                    )
-
+                    PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                 }
             })
@@ -281,11 +302,16 @@ class UnityAdsAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
     override suspend fun show(context: Context, partnerAd: PartnerAd): Result<PartnerAd> {
+        PartnerLogController.log(SHOW_STARTED)
+
         val listener = listeners.remove(partnerAd.request.heliumPlacement)
 
         return when (partnerAd.request.format) {
             // Banner ads do not have a separate "show" mechanism.
-            AdFormat.BANNER -> Result.success(partnerAd)
+            AdFormat.BANNER -> {
+                PartnerLogController.log(SHOW_SUCCEEDED)
+                Result.success(partnerAd)
+            }
             AdFormat.INTERSTITIAL, AdFormat.REWARDED -> showFullscreenAd(
                 context,
                 partnerAd,
@@ -322,20 +348,23 @@ class UnityAdsAdapter : PartnerAdapter {
                         error: UnityAds.UnityAdsShowError,
                         message: String
                     ) {
-                        LogController.e(
-                            "Unity Ads failed to show fullscreen ads. Error: ${error.name}. " +
-                                    "Message: $message"
+                        PartnerLogController.log(
+                            SHOW_FAILED,
+                            "Error: ${error.name}. Message: $message"
                         )
                         continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                     }
 
                     override fun onUnityAdsShowStart(placementId: String) {
+                        PartnerLogController.log(SHOW_SUCCEEDED)
                         continuation.resume(Result.success(partnerAd))
                     }
 
                     override fun onUnityAdsShowClick(placementId: String) {
+                        PartnerLogController.log(DID_CLICK)
                         listener?.onPartnerAdClicked(partnerAd) ?: run {
-                            LogController.e(
+                            PartnerLogController.log(
+                                CUSTOM,
                                 "Unable to fire onPartnerAdClicked for Unity Ads adapter. " +
                                         "Listener is null."
                             )
@@ -350,14 +379,18 @@ class UnityAdsAdapter : PartnerAdapter {
                         if (partnerAd.request.format == AdFormat.REWARDED &&
                             state == UnityAds.UnityAdsShowCompletionState.COMPLETED
                         ) {
+                            PartnerLogController.log(DID_REWARD)
                             listener?.onPartnerAdRewarded(partnerAd, Reward(0, " "))
-                                ?: LogController.e(
+                                ?: PartnerLogController.log(
+                                    CUSTOM,
                                     "Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
                                             "Listener is null."
                                 )
                         }
 
-                        listener?.onPartnerAdDismissed(partnerAd, null) ?: LogController.e(
+                        PartnerLogController.log(DID_DISMISS)
+                        listener?.onPartnerAdDismissed(partnerAd, null) ?: PartnerLogController.log(
+                            CUSTOM,
                             "Unable to fire onPartnerAdClosed for Unity Ads adapter. " +
                                     "Listener is null."
                         )
@@ -379,11 +412,11 @@ class UnityAdsAdapter : PartnerAdapter {
     private fun readyToShow(context: Context, placement: String): Boolean {
         return when {
             context !is Activity -> {
-                LogController.e("Unity Ads cannot show ads. Context is not an Activity instance.")
+                PartnerLogController.log(SHOW_FAILED, "Context is not an Activity instance.")
                 false
             }
             readinessTracker[placement] != true -> {
-                LogController.e("Unity Ads cannot show ads. Ad is not ready.")
+                PartnerLogController.log(SHOW_FAILED, "Ad is not ready.")
                 false
             }
             else -> true
@@ -398,6 +431,8 @@ class UnityAdsAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully discarded, Result.failure(Exception) otherwise.
      */
     override suspend fun invalidate(partnerAd: PartnerAd): Result<PartnerAd> {
+        PartnerLogController.log(INVALIDATE_STARTED)
+
         listeners.remove(partnerAd.request.heliumPlacement)
         readinessTracker.remove(partnerAd.request.partnerPlacement)
 
@@ -410,6 +445,7 @@ class UnityAdsAdapter : PartnerAdapter {
             }
         }
 
+        PartnerLogController.log(INVALIDATE_SUCCEEDED)
         return Result.success(partnerAd)
     }
 
