@@ -102,7 +102,7 @@ class UnityAdsAdapter : PartnerAdapter {
 
         readinessTracker.clear()
 
-        partnerConfiguration.credentials.optString(GAME_ID_KEY).takeIf { it.isNotBlank() }
+        partnerConfiguration.credentials.optString(GAME_ID_KEY).trim().takeIf { it.isNotEmpty() }
             ?.let { gameId ->
                 setMediationMetadata()
 
