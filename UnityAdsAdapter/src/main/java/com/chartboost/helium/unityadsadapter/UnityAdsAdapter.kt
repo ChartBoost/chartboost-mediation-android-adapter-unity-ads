@@ -102,38 +102,39 @@ class UnityAdsAdapter : PartnerAdapter {
 
         readinessTracker.clear()
 
-        partnerConfiguration.credentials[GAME_ID_KEY]?.let { gameId ->
-            setMediationMetadata()
+        partnerConfiguration.credentials.optString(GAME_ID_KEY).takeIf { it.isNotBlank() }
+            ?.let { gameId ->
+                setMediationMetadata()
 
-            return suspendCoroutine { continuation ->
-                UnityAds.initialize(
-                    context.applicationContext,
-                    gameId,
-                    false,
-                    object : IUnityAdsInitializationListener {
-                        override fun onInitializationComplete() {
-                            continuation.resume(
-                                Result.success(
-                                    PartnerLogController.log(
-                                        SETUP_SUCCEEDED
+                return suspendCoroutine { continuation ->
+                    UnityAds.initialize(
+                        context.applicationContext,
+                        gameId,
+                        false,
+                        object : IUnityAdsInitializationListener {
+                            override fun onInitializationComplete() {
+                                continuation.resume(
+                                    Result.success(
+                                        PartnerLogController.log(
+                                            SETUP_SUCCEEDED
+                                        )
                                     )
                                 )
-                            )
-                        }
+                            }
 
-                        override fun onInitializationFailed(
-                            error: UnityAds.UnityAdsInitializationError?,
-                            message: String?
-                        ) {
-                            PartnerLogController.log(
-                                SETUP_FAILED,
-                                "Error: $error. Message: $message"
-                            )
-                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
-                        }
-                    })
-            }
-        } ?: run {
+                            override fun onInitializationFailed(
+                                error: UnityAds.UnityAdsInitializationError?,
+                                message: String?
+                            ) {
+                                PartnerLogController.log(
+                                    SETUP_FAILED,
+                                    "Error: $error. Message: $message"
+                                )
+                                continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
+                            }
+                        })
+                }
+            } ?: run {
             PartnerLogController.log(SETUP_FAILED, "Missing game_id value.")
             return Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED))
         }
