@@ -11,6 +11,8 @@ import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.IUnityAdsLoadListener
 import com.unity3d.ads.IUnityAdsShowListener
 import com.unity3d.ads.UnityAds
+import com.unity3d.ads.UnityAds.UnityAdsLoadError
+import com.unity3d.ads.UnityAds.UnityAdsShowError
 import com.unity3d.ads.metadata.MediationMetaData
 import com.unity3d.ads.metadata.MetaData
 import com.unity3d.services.banners.BannerErrorInfo
@@ -280,13 +282,13 @@ class UnityAdsAdapter : PartnerAdapter {
 
                 override fun onUnityAdsFailedToLoad(
                     placementId: String,
-                    error: UnityAds.UnityAdsLoadError,
+                    error: UnityAdsLoadError,
                     message: String
                 ) {
                     readinessTracker[request.partnerPlacement] = false
 
                     PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
                 }
             })
         }
@@ -344,14 +346,14 @@ class UnityAdsAdapter : PartnerAdapter {
                 object : IUnityAdsShowListener {
                     override fun onUnityAdsShowFailure(
                         placementId: String,
-                        error: UnityAds.UnityAdsShowError,
+                        error: UnityAdsShowError,
                         message: String
                     ) {
                         PartnerLogController.log(
                             SHOW_FAILED,
                             "Error: ${error.name}. Message: $message"
                         )
-                        continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                        continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
                     }
 
                     override fun onUnityAdsShowStart(placementId: String) {
@@ -551,5 +553,21 @@ class UnityAdsAdapter : PartnerAdapter {
                 else -> UnityBannerSize(320, 50)
             }
         } ?: UnityBannerSize(320, 50)
+    }
+
+    /**
+     * Convert a given Unity Ads error code into a [HeliumErrorCode].
+     *
+     * @param error The Unity Ads error code - either a [UnityAds.UnityAdsLoadError] or [UnityAds.UnityAdsShowError].
+     *
+     * @return The corresponding [HeliumErrorCode].
+     */
+    private fun getHeliumErrorCode(error: Any) = when (error) {
+        UnityAdsLoadError.NO_FILL -> HeliumErrorCode.NO_FILL
+        UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+        UnityAdsLoadError.INVALID_ARGUMENT, UnityAdsShowError.INVALID_ARGUMENT -> HeliumErrorCode.INVALID_CONFIG
+        UnityAdsShowError.NO_CONNECTION -> HeliumErrorCode.NO_CONNECTIVITY
+        UnityAdsLoadError.TIMEOUT, UnityAdsShowError.TIMEOUT -> HeliumErrorCode.PARTNER_SDK_TIMEOUT
+        else -> HeliumErrorCode.PARTNER_ERROR
     }
 }
