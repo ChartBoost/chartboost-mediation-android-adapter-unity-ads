@@ -7,6 +7,6 @@ pluginManagement {
 }
 
 rootProject.name = "UnityAdsAdapter"
-include ':UnityAdsAdapter'
-include ':android-helium-sdk'
-include ':Helium'
+include(":UnityAdsAdapter")
+include(":android-helium-sdk")
+include(":Helium")
