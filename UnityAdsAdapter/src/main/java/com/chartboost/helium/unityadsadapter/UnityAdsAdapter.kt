@@ -130,13 +130,13 @@ class UnityAdsAdapter : PartnerAdapter {
                                     SETUP_FAILED,
                                     "Error: $error. Message: $message"
                                 )
-                                continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
+                                continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN)))
                             }
                         })
                 }
             } ?: run {
             PartnerLogController.log(SETUP_FAILED, "Missing game_id value.")
-            return Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED))
+            return Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
         }
     }
 
@@ -194,7 +194,7 @@ class UnityAdsAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         if (context !is Activity) {
             PartnerLogController.log(LOAD_FAILED, "Context is not an Activity instance.")
-            return Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+            return Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_ACTIVITY_NOT_FOUND))
         }
 
         return suspendCoroutine { continuation ->
@@ -240,7 +240,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         LOAD_FAILED, "Error: ${errorInfo.errorCode}. " +
                                 "Message: ${errorInfo.errorMessage}"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onBannerLeftApplication(bannerView: BannerView) {}
@@ -288,7 +288,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     readinessTracker[request.partnerPlacement] = false
 
                     PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
-                    continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
+                    continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
                 }
             })
         }
@@ -334,7 +334,7 @@ class UnityAdsAdapter : PartnerAdapter {
         listener: PartnerAdListener?
     ): Result<PartnerAd> {
         if (!readyToShow(context, partnerAd.request.partnerPlacement)) {
-            return Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL))
+            return Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_INVALID_PARTNER_PLACEMENT))
         }
 
         readinessTracker[partnerAd.request.partnerPlacement] = false
@@ -353,7 +353,7 @@ class UnityAdsAdapter : PartnerAdapter {
                             SHOW_FAILED,
                             "Error: ${error.name}. Message: $message"
                         )
-                        continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
+                        continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
                     }
 
                     override fun onUnityAdsShowStart(placementId: String) {
@@ -556,18 +556,19 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
-     * Convert a given Unity Ads error code into a [HeliumErrorCode].
+     * Convert a given Unity Ads error code into a [HeliumError].
      *
      * @param error The Unity Ads error code - either a [UnityAds.UnityAdsLoadError] or [UnityAds.UnityAdsShowError].
      *
-     * @return The corresponding [HeliumErrorCode].
+     * @return The corresponding [HeliumError].
      */
-    private fun getHeliumErrorCode(error: Any) = when (error) {
-        UnityAdsLoadError.NO_FILL -> HeliumErrorCode.NO_FILL
-        UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
-        UnityAdsLoadError.INVALID_ARGUMENT, UnityAdsShowError.INVALID_ARGUMENT -> HeliumErrorCode.INVALID_CONFIG
-        UnityAdsShowError.NO_CONNECTION -> HeliumErrorCode.NO_CONNECTIVITY
-        UnityAdsLoadError.TIMEOUT, UnityAdsShowError.TIMEOUT -> HeliumErrorCode.PARTNER_SDK_TIMEOUT
-        else -> HeliumErrorCode.PARTNER_ERROR
+    private fun getHeliumError(error: Any) = when (error) {
+        UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> HeliumError.HE_INITIALIZATION_FAILURE_AD_BLOCKER_DETECTED
+        UnityAdsLoadError.NO_FILL -> HeliumError.HE_LOAD_FAILURE_NO_FILL
+        UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
+        UnityAdsShowError.NO_CONNECTION -> HeliumError.HE_NO_CONNECTIVITY
+        UnityAdsLoadError.TIMEOUT -> HeliumError.HE_LOAD_FAILURE_TIMEOUT
+        UnityAdsShowError.TIMEOUT -> HeliumError.HE_SHOW_FAILURE_TIMEOUT
+        else -> HeliumError.HE_PARTNER_ERROR
     }
 }
