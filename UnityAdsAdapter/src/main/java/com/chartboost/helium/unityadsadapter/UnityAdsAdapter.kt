@@ -46,11 +46,6 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
-     * Indicate whether GDPR currently applies to the user.
-     */
-    private var gdprApplies = false
-
-    /**
      * A map of Helium's listeners for the corresponding Helium placements.
      */
     private val listeners = mutableMapOf<String, PartnerAdListener>()
@@ -451,23 +446,25 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
-     * Save the current GDPR applicability state for later use.
+     * Notify the Unity Ads SDK of the GDPR applicability and consent status.
      *
      * @param context The current [Context].
-     * @param gdprApplies True if GDPR applies, false otherwise.
+     * @param applies True if GDPR applies, false otherwise.
+     * @param gdprConsentStatus The user's GDPR consent status.
      */
-    override fun setGdprApplies(context: Context, gdprApplies: Boolean) {
-        PartnerLogController.log(if (gdprApplies) GDPR_APPLICABLE else GDPR_NOT_APPLICABLE)
-        this.gdprApplies = gdprApplies
-    }
+    override fun setGdpr(
+        context: Context,
+        applies: Boolean?,
+        gdprConsentStatus: GdprConsentStatus
+    ) {
+        PartnerLogController.log(
+            when (applies) {
+                true -> GDPR_APPLICABLE
+                false -> GDPR_NOT_APPLICABLE
+                else -> GDPR_UNKNOWN
+            }
+        )
 
-    /**
-     * Notify Unity Ads of the user's GDPR consent status, if applicable.
-     *
-     * @param context The current [Context].
-     * @param gdprConsentStatus The user's current GDPR consent status.
-     */
-    override fun setGdprConsentStatus(context: Context, gdprConsentStatus: GdprConsentStatus) {
         PartnerLogController.log(
             when (gdprConsentStatus) {
                 GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
@@ -476,7 +473,7 @@ class UnityAdsAdapter : PartnerAdapter {
             }
         )
 
-        if (gdprApplies) {
+        if (applies == true) {
             MetaData(context).apply {
                 this["gdpr.consent"] = gdprConsentStatus == GdprConsentStatus.GDPR_CONSENT_GRANTED
                 commit()
