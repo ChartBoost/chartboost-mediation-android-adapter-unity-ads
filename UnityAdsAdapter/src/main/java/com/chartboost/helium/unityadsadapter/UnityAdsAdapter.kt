@@ -376,7 +376,7 @@ class UnityAdsAdapter : PartnerAdapter {
                             state == UnityAds.UnityAdsShowCompletionState.COMPLETED
                         ) {
                             PartnerLogController.log(DID_REWARD)
-                            listener?.onPartnerAdRewarded(partnerAd, Reward(0, " "))
+                            listener?.onPartnerAdRewarded(partnerAd)
                                 ?: PartnerLogController.log(
                                     CUSTOM,
                                     "Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
