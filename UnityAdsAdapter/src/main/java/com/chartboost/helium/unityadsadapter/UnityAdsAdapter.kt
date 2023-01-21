@@ -18,6 +18,9 @@ import com.unity3d.ads.metadata.MetaData
 import com.unity3d.services.banners.BannerErrorInfo
 import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.UnityBannerSize
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -102,7 +105,9 @@ class UnityAdsAdapter : PartnerAdapter {
 
         readinessTracker.clear()
 
-        partnerConfiguration.credentials.optString(GAME_ID_KEY).trim().takeIf { it.isNotEmpty() }
+        Json.decodeFromJsonElement<String>((partnerConfiguration.credentials as JsonObject).getValue(GAME_ID_KEY))
+            .trim()
+            .takeIf { it.isNotEmpty() }
             ?.let { gameId ->
                 setMediationMetadata()
 
