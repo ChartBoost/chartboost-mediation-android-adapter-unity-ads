@@ -1,19 +1,19 @@
 # Chartboost Mediation Unity Ads Adapter
 
-The Chartboost Mediation Unity Ads adapter mediates the Unity Ads SDK into the Chartboost Mediation SDK.
+The Chartboost Mediation Unity Ads adapter mediates Unity Ads via the Chartboost Mediation SDK.
 
 ## Minimum Requirements
 
-| Plugin | Version |
-| ------ | ------ |
-| Chartboost Mediation SDK | 4.0.0+ |
-| Android API | 21+ |
+| Plugin                   | Version |
+| ------------------------ | ------- |
+| Chartboost Mediation SDK | 4.0.0+  |
+| Android API              | 21+     |
 
 ## Integration
 
 In your `build.gradle`, add the following entry:
 ```
-    implementation "com.chartboost:mediation-adapter-unity-ads:4.4.4.1.0"
+    implementation "com.chartboost:chartboost-mediation-adapter-unity-ads:4.4.4.1.0"
 ```
 
 ## Contributions
