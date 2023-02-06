@@ -5,7 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 
-package com.chartboost.helium.unityadsadapter
+package com.chartboost.mediation.unityadsadapter
 
 import android.app.Activity
 import android.content.Context
@@ -32,14 +32,14 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * The Helium Unity Ads Adapter.
+ * The Chartboost Mediation Unity Ads Adapter.
  */
 class UnityAdsAdapter : PartnerAdapter {
     companion object {
         /**
          * Flag that can optionally be set to enable Unity Ads debug mode.
          */
-        public var debugMode = UnityAds.getDebugMode()
+        var debugMode = UnityAds.getDebugMode()
             set(value) {
                 field = value
                 UnityAds.setDebugMode(value)
@@ -56,7 +56,7 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
-     * A map of Helium's listeners for the corresponding Helium placements.
+     * A map of Chartboost Mediation's listeners for the corresponding Chartboost placements.
      */
     private val listeners = mutableMapOf<String, PartnerAdListener>()
 
@@ -69,16 +69,16 @@ class UnityAdsAdapter : PartnerAdapter {
      * Get the Unity Ads adapter version.
      *
      * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Helium:
+     * following format if the adapter will be published by Chartboost Mediation:
      *
-     * Helium.Partner.Adapter
+     * Chartboost Mediation.Partner.Adapter
      *
-     * "Helium" represents the Helium SDK’s major version that is compatible with this adapter. This must be 1 digit.
+     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
      * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
      * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
      */
     override val adapterVersion: String
-        get() = BuildConfig.HELIUM_UNITY_ADS_ADAPTER_VERSION
+        get() = BuildConfig.CHARTBOOST_MEDIATION_UNITY_ADS_ADAPTER_VERSION
 
     /**
      * Get the Unity Ads SDK version.
@@ -116,7 +116,7 @@ class UnityAdsAdapter : PartnerAdapter {
             .trim()
             .takeIf { it.isNotEmpty() }
             ?.let { gameId ->
-                setMediationMetadata()
+                setMediationMetadata(context)
 
                 return suspendCoroutine { continuation ->
                     UnityAds.initialize(
@@ -142,13 +142,13 @@ class UnityAdsAdapter : PartnerAdapter {
                                     SETUP_FAILED,
                                     "Error: $error. Message: $message"
                                 )
-                                continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN)))
+                                continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
                             }
                         })
                 }
             } ?: run {
             PartnerLogController.log(SETUP_FAILED, "Missing game_id value.")
-            return Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
         }
     }
 
@@ -174,7 +174,7 @@ class UnityAdsAdapter : PartnerAdapter {
      *
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
-     * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
+     * @param partnerAdListener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -197,7 +197,7 @@ class UnityAdsAdapter : PartnerAdapter {
      *
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      */
     private suspend fun loadBannerAd(
         context: Context,
@@ -206,7 +206,7 @@ class UnityAdsAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         if (context !is Activity) {
             PartnerLogController.log(LOAD_FAILED, "Context is not an Activity instance.")
-            return Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_ACTIVITY_NOT_FOUND))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_ACTIVITY_NOT_FOUND))
         }
 
         return suspendCoroutine { continuation ->
@@ -252,7 +252,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         LOAD_FAILED, "Error: ${errorInfo.errorCode}. " +
                                 "Message: ${errorInfo.errorMessage}"
                     )
-                    continuation.resume(Result.failure(HeliumAdException(HeliumError.HE_LOAD_FAILURE_UNKNOWN)))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onBannerLeftApplication(bannerView: BannerView) {}
@@ -266,14 +266,14 @@ class UnityAdsAdapter : PartnerAdapter {
      * Attempt to load a Unity Ads fullscreen ad. This method supports both interstitial and rewarded ads.
      *
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      */
     private suspend fun loadFullscreenAd(
         request: PartnerAdLoadRequest,
         listener: PartnerAdListener
     ): Result<PartnerAd> {
         // Save the listener for later use.
-        listeners[request.heliumPlacement] = listener
+        listeners[request.chartboostPlacement] = listener
 
         return suspendCoroutine { continuation ->
             UnityAds.load(request.partnerPlacement, object : IUnityAdsLoadListener {
@@ -300,7 +300,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     readinessTracker[request.partnerPlacement] = false
 
                     PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
-                    continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
+                    continuation.resume(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
                 }
             })
         }
@@ -317,7 +317,7 @@ class UnityAdsAdapter : PartnerAdapter {
     override suspend fun show(context: Context, partnerAd: PartnerAd): Result<PartnerAd> {
         PartnerLogController.log(SHOW_STARTED)
 
-        val listener = listeners.remove(partnerAd.request.heliumPlacement)
+        val listener = listeners.remove(partnerAd.request.chartboostPlacement)
 
         return when (partnerAd.request.format) {
             // Banner ads do not have a separate "show" mechanism.
@@ -338,7 +338,7 @@ class UnityAdsAdapter : PartnerAdapter {
      *
      * @param context The current [Context].
      * @param partnerAd The [PartnerAd] object containing the Unity Ads ad to be shown.
-     * @param listener A [PartnerAdListener] to notify Helium of ad events.
+     * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      */
     private suspend fun showFullscreenAd(
         context: Context,
@@ -346,7 +346,7 @@ class UnityAdsAdapter : PartnerAdapter {
         listener: PartnerAdListener?
     ): Result<PartnerAd> {
         if (!readyToShow(context, partnerAd.request.partnerPlacement)) {
-            return Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_INVALID_PARTNER_PLACEMENT))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_INVALID_PARTNER_PLACEMENT))
         }
 
         readinessTracker[partnerAd.request.partnerPlacement] = false
@@ -365,7 +365,7 @@ class UnityAdsAdapter : PartnerAdapter {
                             SHOW_FAILED,
                             "Error: ${error.name}. Message: $message"
                         )
-                        continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
+                        continuation.resume(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
                     }
 
                     override fun onUnityAdsShowStart(placementId: String) {
@@ -446,7 +446,7 @@ class UnityAdsAdapter : PartnerAdapter {
     override suspend fun invalidate(partnerAd: PartnerAd): Result<PartnerAd> {
         PartnerLogController.log(INVALIDATE_STARTED)
 
-        listeners.remove(partnerAd.request.heliumPlacement)
+        listeners.remove(partnerAd.request.chartboostPlacement)
         readinessTracker.remove(partnerAd.request.partnerPlacement)
 
         // Only invalidate banner ads.
@@ -532,7 +532,7 @@ class UnityAdsAdapter : PartnerAdapter {
             else COPPA_NOT_SUBJECT
         )
 
-        val coppaMetaData = MetaData(HeliumSdk.getContext())
+        val coppaMetaData = MetaData(context)
 
         // True if the user is over the age limit, meaning that the subject is not subject to COPPA.
         // False if the user is under the limit, meaning subject is subject to COPPA.
@@ -543,18 +543,18 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Send mediation-specific data to Unity Ads.
      */
-    private fun setMediationMetadata() {
-        val mediationMetaData = MediationMetaData(HeliumSdk.getContext())
-        mediationMetaData.setName("Helium")
+    private fun setMediationMetadata(context: Context) {
+        val mediationMetaData = MediationMetaData(context)
+        mediationMetaData.setName("Chartboost")
         mediationMetaData.setVersion(HeliumSdk.getVersion())
-        mediationMetaData["helium_adapter_version"] = adapterVersion
+        mediationMetaData["adapter_version"] = adapterVersion
         mediationMetaData.commit()
     }
 
     /**
-     * Convert a Helium banner size into the corresponding Unity Ads banner size.
+     * Convert a Chartboost Mediation banner size into the corresponding Unity Ads banner size.
      *
-     * @param size The Helium banner size.
+     * @param size The Chartboost Mediation banner size.
      *
      * @return The Unity Ads banner size.
      */
@@ -570,19 +570,19 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
-     * Convert a given Unity Ads error code into a [HeliumError].
+     * Convert a given Unity Ads error code into a [ChartboostMediationError].
      *
      * @param error The Unity Ads error code - either a [UnityAds.UnityAdsLoadError] or [UnityAds.UnityAdsShowError].
      *
-     * @return The corresponding [HeliumError].
+     * @return The corresponding [ChartboostMediationError].
      */
-    private fun getHeliumError(error: Any) = when (error) {
-        UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> HeliumError.HE_INITIALIZATION_FAILURE_AD_BLOCKER_DETECTED
-        UnityAdsLoadError.NO_FILL -> HeliumError.HE_LOAD_FAILURE_NO_FILL
-        UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
-        UnityAdsShowError.NO_CONNECTION -> HeliumError.HE_NO_CONNECTIVITY
-        UnityAdsLoadError.TIMEOUT -> HeliumError.HE_LOAD_FAILURE_TIMEOUT
-        UnityAdsShowError.TIMEOUT -> HeliumError.HE_SHOW_FAILURE_TIMEOUT
-        else -> HeliumError.HE_PARTNER_ERROR
+    private fun getChartboostMediationError(error: Any) = when (error) {
+        UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_AD_BLOCKER_DETECTED
+        UnityAdsLoadError.NO_FILL -> ChartboostMediationError.CM_LOAD_FAILURE_NO_FILL
+        UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
+        UnityAdsShowError.NO_CONNECTION -> ChartboostMediationError.CM_NO_CONNECTIVITY
+        UnityAdsLoadError.TIMEOUT -> ChartboostMediationError.CM_LOAD_FAILURE_TIMEOUT
+        UnityAdsShowError.TIMEOUT -> ChartboostMediationError.CM_SHOW_FAILURE_TIMEOUT
+        else -> ChartboostMediationError.CM_PARTNER_ERROR
     }
 }
