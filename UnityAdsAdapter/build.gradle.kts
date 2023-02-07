@@ -116,7 +116,7 @@ afterEvaluate {
 
                 val adapterName = "unity-ads"
                 groupId = "com.chartboost"
-                artifactId = "chartboost-mediatiion-adapter-$adapterName"
+                artifactId = "chartboost-mediation-adapter-$adapterName"
                 version = if (project.hasProperty("snapshot")) {
                     android.defaultConfig.versionName + rootProject.ext["SNAPSHOT"]
                 } else {
