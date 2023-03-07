@@ -554,7 +554,7 @@ class UnityAdsAdapter : PartnerAdapter {
     private fun setMediationMetadata(context: Context) {
         val mediationMetaData = MediationMetaData(context)
         mediationMetaData.setName("Chartboost")
-        mediationMetaData.setVersion(HeliumSdk.getVersion())
+        mediationMetaData.setVersion(HeliumSdk.version)
         mediationMetaData["adapter_version"] = adapterVersion
         mediationMetaData.commit()
     }
