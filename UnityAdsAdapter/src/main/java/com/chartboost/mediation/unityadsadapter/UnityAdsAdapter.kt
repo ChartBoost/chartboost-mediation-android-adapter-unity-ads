@@ -335,7 +335,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 listener
             )
             else -> {
-                PartnerLogController.log(LOAD_FAILED)
+                PartnerLogController.log(SHOW_FAILED)
                 Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNSUPPORTED_AD_FORMAT))
             }
         }
