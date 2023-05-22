@@ -18,7 +18,7 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 ### 4.4.5.0.0
 - This version of the adapter has been certified with Unity Ads SDK 4.5.0.
 
-### 4.4.4.0.1
+### 4.4.4.1.1
 - Updated the dependency on Chartboost Mediation SDK to 4.0.0.
 
 ### 4.4.4.1.0
