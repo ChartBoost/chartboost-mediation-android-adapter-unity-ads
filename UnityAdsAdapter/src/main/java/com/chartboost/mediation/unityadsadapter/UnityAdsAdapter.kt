@@ -378,6 +378,11 @@ class UnityAdsAdapter : PartnerAdapter {
 
                     override fun onUnityAdsShowStart(placementId: String) {
                         PartnerLogController.log(SHOW_SUCCEEDED)
+                        listener?.onPartnerAdImpression(partnerAd)
+                            ?: PartnerLogController.log(
+                                CUSTOM,
+                                "Unable to fire onPartnerAdImpression for Unity Ads adapter."
+                            )
                         continuation.resume(Result.success(partnerAd))
                     }
 
