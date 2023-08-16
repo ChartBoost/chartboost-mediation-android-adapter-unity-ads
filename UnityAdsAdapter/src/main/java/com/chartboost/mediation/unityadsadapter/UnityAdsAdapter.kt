@@ -241,7 +241,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         PartnerAd(
                             ad = bannerAdView,
                             details = emptyMap(),
-                            request = request
+                            request = request,
                         )
                     )
                 }
