@@ -235,6 +235,17 @@ class UnityAdsAdapter : PartnerAdapter {
                     )
                 }
 
+                override fun onBannerShown(bannerAdView: BannerView?) {
+                    PartnerLogController.log(DID_TRACK_IMPRESSION)
+                    listener.onPartnerAdImpression(
+                        PartnerAd(
+                            ad = bannerAdView,
+                            details = emptyMap(),
+                            request = request,
+                        )
+                    )
+                }
+
                 override fun onBannerClick(bannerAdView: BannerView) {
                     PartnerLogController.log(DID_CLICK)
                     listener.onPartnerAdClicked(
