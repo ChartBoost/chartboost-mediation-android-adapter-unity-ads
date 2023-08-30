@@ -25,11 +25,11 @@ import com.unity3d.ads.metadata.MetaData
 import com.unity3d.services.banners.BannerErrorInfo
 import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.UnityBannerSize
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * The Chartboost Mediation Unity Ads Adapter.
@@ -118,14 +118,20 @@ class UnityAdsAdapter : PartnerAdapter {
             ?.let { gameId ->
                 setMediationMetadata(context)
 
-                return suspendCoroutine { continuation ->
+                return suspendCancellableCoroutine { continuation ->
+                    fun resumeOnce(result: Result<Unit>) {
+                        if (continuation.isActive) {
+                            continuation.resume(result)
+                        }
+                    }
+
                     UnityAds.initialize(
                         context.applicationContext,
                         gameId,
                         false,
                         object : IUnityAdsInitializationListener {
                             override fun onInitializationComplete() {
-                                continuation.resume(
+                                resumeOnce(
                                     Result.success(
                                         PartnerLogController.log(
                                             SETUP_SUCCEEDED
@@ -142,7 +148,7 @@ class UnityAdsAdapter : PartnerAdapter {
                                     SETUP_FAILED,
                                     "Error: $error. Message: $message"
                                 )
-                                continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
+                                resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
                             }
                         })
                 }
@@ -213,7 +219,13 @@ class UnityAdsAdapter : PartnerAdapter {
             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_ACTIVITY_NOT_FOUND))
         }
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<PartnerAd>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             val ad = BannerView(
                 context, request.partnerPlacement,
                 getUnityAdsBannerSize(request.size)
@@ -224,7 +236,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     readinessTracker[request.partnerPlacement] = true
 
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
+                    resumeOnce(
                         Result.success(
                             PartnerAd(
                                 ad = bannerAdView,
@@ -267,7 +279,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         LOAD_FAILED, "Error: ${errorInfo.errorCode}. " +
                                 "Message: ${errorInfo.errorMessage}"
                     )
-                    continuation.resume(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
                 }
 
                 override fun onBannerLeftApplication(bannerView: BannerView) {}
@@ -290,13 +302,19 @@ class UnityAdsAdapter : PartnerAdapter {
         // Save the listener for later use.
         listeners[request.identifier] = listener
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<PartnerAd>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             UnityAds.load(request.partnerPlacement, object : IUnityAdsLoadListener {
                 override fun onUnityAdsAdLoaded(placementId: String) {
                     readinessTracker[request.partnerPlacement] = true
 
                     PartnerLogController.log(LOAD_SUCCEEDED)
-                    continuation.resume(
+                    resumeOnce(
                         Result.success(
                             PartnerAd(
                                 ad = null,
@@ -315,7 +333,7 @@ class UnityAdsAdapter : PartnerAdapter {
                     readinessTracker[request.partnerPlacement] = false
 
                     PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
-                    continuation.resume(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
+                    resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
                 }
             })
         }
@@ -370,7 +388,13 @@ class UnityAdsAdapter : PartnerAdapter {
 
         readinessTracker[partnerAd.request.partnerPlacement] = false
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<PartnerAd>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             UnityAds.show(
                 context as Activity,
                 partnerAd.request.partnerPlacement,
@@ -384,7 +408,7 @@ class UnityAdsAdapter : PartnerAdapter {
                             SHOW_FAILED,
                             "Error: ${error.name}. Message: $message"
                         )
-                        continuation.resume(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
+                        resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
                     }
 
                     override fun onUnityAdsShowStart(placementId: String) {
@@ -394,7 +418,7 @@ class UnityAdsAdapter : PartnerAdapter {
                                 CUSTOM,
                                 "Unable to fire onPartnerAdImpression for Unity Ads adapter."
                             )
-                        continuation.resume(Result.success(partnerAd))
+                        resumeOnce(Result.success(partnerAd))
                     }
 
                     override fun onUnityAdsShowClick(placementId: String) {

@@ -3,9 +3,15 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+### 4.4.8.0.1
+- Guard against multiple continuation resumes wherever possible.
+
 ### 4.4.8.0.0
 - This version of the adapter has been certified with Unity Ads SDK 4.8.0.
 - Added onPartnerAdImpression to banners.
+
+### 4.4.7.1.1
+- Guard against multiple continuation resumes wherever possible.
 
 ### 4.4.7.1.0
 - This version of the adapter has been certified with Unity Ads SDK 4.7.1. 
