@@ -70,7 +70,7 @@ dependencies {
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:4.0.0")
 
     // Partner SDK
-    implementation("com.unity3d.ads:unity-ads:4.8.0")
+    implementation("com.unity3d.ads:unity-ads:4.7.1")
 
     // Adapter Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
