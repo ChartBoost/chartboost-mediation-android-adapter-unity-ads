@@ -193,7 +193,7 @@ class UnityAdsAdapter : PartnerAdapter {
         readinessTracker[request.partnerPlacement] = false
 
         return when (request.format) {
-            AdFormat.BANNER -> loadBannerAd(context, request, partnerAdListener)
+            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> loadBannerAd(context, request, partnerAdListener)
             AdFormat.INTERSTITIAL, AdFormat.REWARDED -> loadFullscreenAd(request, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
@@ -354,7 +354,7 @@ class UnityAdsAdapter : PartnerAdapter {
 
         return when (partnerAd.request.format) {
             // Banner ads do not have a separate "show" mechanism.
-            AdFormat.BANNER -> {
+            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> {
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
