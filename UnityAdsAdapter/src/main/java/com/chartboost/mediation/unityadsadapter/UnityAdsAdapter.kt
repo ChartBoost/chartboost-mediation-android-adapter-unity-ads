@@ -192,9 +192,9 @@ class UnityAdsAdapter : PartnerAdapter {
         PartnerLogController.log(LOAD_STARTED)
         readinessTracker[request.partnerPlacement] = false
 
-        return when (request.format) {
-            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> loadBannerAd(context, request, partnerAdListener)
-            AdFormat.INTERSTITIAL, AdFormat.REWARDED -> loadFullscreenAd(request, partnerAdListener)
+        return when (request.format.key) {
+            AdFormat.BANNER.key, "adaptive_banner" -> loadBannerAd(context, request, partnerAdListener)
+            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key -> loadFullscreenAd(request, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
                 Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
@@ -352,13 +352,13 @@ class UnityAdsAdapter : PartnerAdapter {
 
         val listener = listeners.remove(partnerAd.request.identifier)
 
-        return when (partnerAd.request.format) {
+        return when (partnerAd.request.format.key) {
             // Banner ads do not have a separate "show" mechanism.
-            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> {
+            AdFormat.BANNER.key, "adaptive_banner" -> {
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
-            AdFormat.INTERSTITIAL, AdFormat.REWARDED -> showFullscreenAd(
+            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key -> showFullscreenAd(
                 context,
                 partnerAd,
                 listener
