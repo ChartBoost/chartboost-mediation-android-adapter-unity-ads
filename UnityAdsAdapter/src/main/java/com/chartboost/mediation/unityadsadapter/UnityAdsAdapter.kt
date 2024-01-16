@@ -39,10 +39,10 @@ class UnityAdsAdapter : PartnerAdapter {
         /**
          * Flag that can optionally be set to enable Unity Ads debug mode.
          */
-        var debugMode = UnityAds.getDebugMode()
+        var debugMode = UnityAds.debugMode
             set(value) {
                 field = value
-                UnityAds.setDebugMode(value)
+                UnityAds.debugMode = value
                 PartnerLogController.log(
                     CUSTOM,
                     "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}."
@@ -84,7 +84,7 @@ class UnityAdsAdapter : PartnerAdapter {
      * Get the Unity Ads SDK version.
      */
     override val partnerSdkVersion: String
-        get() = UnityAds.getVersion()
+        get() = UnityAds.version
 
     /**
      * Get the partner name for internal uses.
