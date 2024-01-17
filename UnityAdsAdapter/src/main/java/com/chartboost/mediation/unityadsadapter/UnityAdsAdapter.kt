@@ -1,6 +1,6 @@
 /*
  * Copyright 2022-2023 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -45,7 +45,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 UnityAds.debugMode = value
                 PartnerLogController.log(
                     CUSTOM,
-                    "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}."
+                    "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.",
                 )
             }
 
@@ -106,7 +106,7 @@ class UnityAdsAdapter : PartnerAdapter {
      */
     override suspend fun setUp(
         context: Context,
-        partnerConfiguration: PartnerConfiguration
+        partnerConfiguration: PartnerConfiguration,
     ): Result<Unit> {
         PartnerLogController.log(SETUP_STARTED)
 
@@ -134,23 +134,28 @@ class UnityAdsAdapter : PartnerAdapter {
                                 resumeOnce(
                                     Result.success(
                                         PartnerLogController.log(
-                                            SETUP_SUCCEEDED
-                                        )
-                                    )
+                                            SETUP_SUCCEEDED,
+                                        ),
+                                    ),
                                 )
                             }
 
                             override fun onInitializationFailed(
                                 error: UnityAds.UnityAdsInitializationError?,
-                                message: String?
+                                message: String?,
                             ) {
                                 PartnerLogController.log(
                                     SETUP_FAILED,
-                                    "Error: $error. Message: $message"
+                                    "Error: $error. Message: $message",
                                 )
-                                resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN)))
+                                resumeOnce(
+                                    Result.failure(
+                                        ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN),
+                                    ),
+                                )
                             }
-                        })
+                        },
+                    )
                 }
             } ?: run {
             PartnerLogController.log(SETUP_FAILED, "Missing game_id value.")
@@ -168,7 +173,7 @@ class UnityAdsAdapter : PartnerAdapter {
      */
     override suspend fun fetchBidderInformation(
         context: Context,
-        request: PreBidRequest
+        request: PreBidRequest,
     ): Map<String, String> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
         PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
@@ -187,7 +192,7 @@ class UnityAdsAdapter : PartnerAdapter {
     override suspend fun load(
         context: Context,
         request: PartnerAdLoadRequest,
-        partnerAdListener: PartnerAdListener
+        partnerAdListener: PartnerAdListener,
     ): Result<PartnerAd> {
         PartnerLogController.log(LOAD_STARTED)
         readinessTracker[request.partnerPlacement] = false
@@ -212,7 +217,7 @@ class UnityAdsAdapter : PartnerAdapter {
     private suspend fun loadBannerAd(
         context: Context,
         request: PartnerAdLoadRequest,
-        listener: PartnerAdListener
+        listener: PartnerAdListener,
     ): Result<PartnerAd> {
         if (context !is Activity) {
             PartnerLogController.log(LOAD_FAILED, "Context is not an Activity instance.")
@@ -226,64 +231,68 @@ class UnityAdsAdapter : PartnerAdapter {
                 }
             }
 
-            val ad = BannerView(
-                context, request.partnerPlacement,
-                getUnityAdsBannerSize(request.size)
-            )
+            val ad =
+                BannerView(
+                    context,
+                    request.partnerPlacement,
+                    getUnityAdsBannerSize(request.size),
+                )
 
-            ad.listener = object : BannerView.Listener() {
-                override fun onBannerLoaded(bannerAdView: BannerView) {
-                    readinessTracker[request.partnerPlacement] = true
+            ad.listener =
+                object : BannerView.Listener() {
+                    override fun onBannerLoaded(bannerAdView: BannerView) {
+                        readinessTracker[request.partnerPlacement] = true
 
-                    PartnerLogController.log(LOAD_SUCCEEDED)
-                    resumeOnce(
-                        Result.success(
+                        PartnerLogController.log(LOAD_SUCCEEDED)
+                        resumeOnce(
+                            Result.success(
+                                PartnerAd(
+                                    ad = bannerAdView,
+                                    details = emptyMap(),
+                                    request = request,
+                                ),
+                            ),
+                        )
+                    }
+
+                    override fun onBannerShown(bannerAdView: BannerView?) {
+                        PartnerLogController.log(DID_TRACK_IMPRESSION)
+                        listener.onPartnerAdImpression(
                             PartnerAd(
                                 ad = bannerAdView,
                                 details = emptyMap(),
                                 request = request,
-                            )
+                            ),
                         )
-                    )
-                }
+                    }
 
-                override fun onBannerShown(bannerAdView: BannerView?) {
-                    PartnerLogController.log(DID_TRACK_IMPRESSION)
-                    listener.onPartnerAdImpression(
-                        PartnerAd(
-                            ad = bannerAdView,
-                            details = emptyMap(),
-                            request = request,
+                    override fun onBannerClick(bannerAdView: BannerView) {
+                        PartnerLogController.log(DID_CLICK)
+                        listener.onPartnerAdClicked(
+                            PartnerAd(
+                                ad = bannerAdView,
+                                details = emptyMap(),
+                                request = request,
+                            ),
                         )
-                    )
-                }
+                    }
 
-                override fun onBannerClick(bannerAdView: BannerView) {
-                    PartnerLogController.log(DID_CLICK)
-                    listener.onPartnerAdClicked(
-                        PartnerAd(
-                            ad = bannerAdView,
-                            details = emptyMap(),
-                            request = request,
+                    override fun onBannerFailedToLoad(
+                        bannerAdView: BannerView,
+                        errorInfo: BannerErrorInfo,
+                    ) {
+                        readinessTracker[request.partnerPlacement] = false
+
+                        PartnerLogController.log(
+                            LOAD_FAILED,
+                            "Error: ${errorInfo.errorCode}. " +
+                                "Message: ${errorInfo.errorMessage}",
                         )
-                    )
+                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                    }
+
+                    override fun onBannerLeftApplication(bannerView: BannerView) {}
                 }
-
-                override fun onBannerFailedToLoad(
-                    bannerAdView: BannerView,
-                    errorInfo: BannerErrorInfo
-                ) {
-                    readinessTracker[request.partnerPlacement] = false
-
-                    PartnerLogController.log(
-                        LOAD_FAILED, "Error: ${errorInfo.errorCode}. " +
-                                "Message: ${errorInfo.errorMessage}"
-                    )
-                    resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
-                }
-
-                override fun onBannerLeftApplication(bannerView: BannerView) {}
-            }
 
             ad.load()
         }
@@ -297,7 +306,7 @@ class UnityAdsAdapter : PartnerAdapter {
      */
     private suspend fun loadFullscreenAd(
         request: PartnerAdLoadRequest,
-        listener: PartnerAdListener
+        listener: PartnerAdListener,
     ): Result<PartnerAd> {
         // Save the listener for later use.
         listeners[request.identifier] = listener
@@ -309,33 +318,36 @@ class UnityAdsAdapter : PartnerAdapter {
                 }
             }
 
-            UnityAds.load(request.partnerPlacement, object : IUnityAdsLoadListener {
-                override fun onUnityAdsAdLoaded(placementId: String) {
-                    readinessTracker[request.partnerPlacement] = true
+            UnityAds.load(
+                request.partnerPlacement,
+                object : IUnityAdsLoadListener {
+                    override fun onUnityAdsAdLoaded(placementId: String) {
+                        readinessTracker[request.partnerPlacement] = true
 
-                    PartnerLogController.log(LOAD_SUCCEEDED)
-                    resumeOnce(
-                        Result.success(
-                            PartnerAd(
-                                ad = null,
-                                details = emptyMap(),
-                                request = request,
-                            )
+                        PartnerLogController.log(LOAD_SUCCEEDED)
+                        resumeOnce(
+                            Result.success(
+                                PartnerAd(
+                                    ad = null,
+                                    details = emptyMap(),
+                                    request = request,
+                                ),
+                            ),
                         )
-                    )
-                }
+                    }
 
-                override fun onUnityAdsFailedToLoad(
-                    placementId: String,
-                    error: UnityAdsLoadError,
-                    message: String
-                ) {
-                    readinessTracker[request.partnerPlacement] = false
+                    override fun onUnityAdsFailedToLoad(
+                        placementId: String,
+                        error: UnityAdsLoadError,
+                        message: String,
+                    ) {
+                        readinessTracker[request.partnerPlacement] = false
 
-                    PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
-                    resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
-                }
-            })
+                        PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
+                        resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
+                    }
+                },
+            )
         }
     }
 
@@ -347,7 +359,10 @@ class UnityAdsAdapter : PartnerAdapter {
      *
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
-    override suspend fun show(context: Context, partnerAd: PartnerAd): Result<PartnerAd> {
+    override suspend fun show(
+        context: Context,
+        partnerAd: PartnerAd,
+    ): Result<PartnerAd> {
         PartnerLogController.log(SHOW_STARTED)
 
         val listener = listeners.remove(partnerAd.request.identifier)
@@ -358,11 +373,12 @@ class UnityAdsAdapter : PartnerAdapter {
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
-            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key -> showFullscreenAd(
-                context,
-                partnerAd,
-                listener
-            )
+            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key ->
+                showFullscreenAd(
+                    context,
+                    partnerAd,
+                    listener,
+                )
             else -> {
                 PartnerLogController.log(SHOW_FAILED)
                 Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNSUPPORTED_AD_FORMAT))
@@ -380,7 +396,7 @@ class UnityAdsAdapter : PartnerAdapter {
     private suspend fun showFullscreenAd(
         context: Context,
         partnerAd: PartnerAd,
-        listener: PartnerAdListener?
+        listener: PartnerAdListener?,
     ): Result<PartnerAd> {
         if (!readyToShow(context, partnerAd.request.partnerPlacement)) {
             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_INVALID_PARTNER_PLACEMENT))
@@ -402,11 +418,11 @@ class UnityAdsAdapter : PartnerAdapter {
                     override fun onUnityAdsShowFailure(
                         placementId: String,
                         error: UnityAdsShowError,
-                        message: String
+                        message: String,
                     ) {
                         PartnerLogController.log(
                             SHOW_FAILED,
-                            "Error: ${error.name}. Message: $message"
+                            "Error: ${error.name}. Message: $message",
                         )
                         resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
                     }
@@ -416,7 +432,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         listener?.onPartnerAdImpression(partnerAd)
                             ?: PartnerLogController.log(
                                 CUSTOM,
-                                "Unable to fire onPartnerAdImpression for Unity Ads adapter."
+                                "Unable to fire onPartnerAdImpression for Unity Ads adapter.",
                             )
                         resumeOnce(Result.success(partnerAd))
                     }
@@ -427,14 +443,14 @@ class UnityAdsAdapter : PartnerAdapter {
                             PartnerLogController.log(
                                 CUSTOM,
                                 "Unable to fire onPartnerAdClicked for Unity Ads adapter. " +
-                                        "Listener is null."
+                                    "Listener is null.",
                             )
                         }
                     }
 
                     override fun onUnityAdsShowComplete(
                         placementId: String,
-                        state: UnityAds.UnityAdsShowCompletionState
+                        state: UnityAds.UnityAdsShowCompletionState,
                     ) {
                         readinessTracker[partnerAd.request.partnerPlacement] = false
                         if (partnerAd.request.format == AdFormat.REWARDED &&
@@ -445,7 +461,7 @@ class UnityAdsAdapter : PartnerAdapter {
                                 ?: PartnerLogController.log(
                                     CUSTOM,
                                     "Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
-                                            "Listener is null."
+                                        "Listener is null.",
                                 )
                         }
 
@@ -453,11 +469,11 @@ class UnityAdsAdapter : PartnerAdapter {
                         listener?.onPartnerAdDismissed(partnerAd, null) ?: PartnerLogController.log(
                             CUSTOM,
                             "Unable to fire onPartnerAdClosed for Unity Ads adapter. " +
-                                    "Listener is null."
+                                "Listener is null.",
                         )
                     }
-                })
-
+                },
+            )
         }
     }
 
@@ -470,7 +486,10 @@ class UnityAdsAdapter : PartnerAdapter {
      *
      * @return True if the ad is ready to be shown, false otherwise.
      */
-    private fun readyToShow(context: Context, placement: String): Boolean {
+    private fun readyToShow(
+        context: Context,
+        placement: String,
+    ): Boolean {
         return when {
             context !is Activity -> {
                 PartnerLogController.log(SHOW_FAILED, "Context is not an Activity instance.")
@@ -520,14 +539,14 @@ class UnityAdsAdapter : PartnerAdapter {
     override fun setGdpr(
         context: Context,
         applies: Boolean?,
-        gdprConsentStatus: GdprConsentStatus
+        gdprConsentStatus: GdprConsentStatus,
     ) {
         PartnerLogController.log(
             when (applies) {
                 true -> GDPR_APPLICABLE
                 false -> GDPR_NOT_APPLICABLE
                 else -> GDPR_UNKNOWN
-            }
+            },
         )
 
         PartnerLogController.log(
@@ -535,7 +554,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
                 GdprConsentStatus.GDPR_CONSENT_GRANTED -> GDPR_CONSENT_GRANTED
                 GdprConsentStatus.GDPR_CONSENT_DENIED -> GDPR_CONSENT_DENIED
-            }
+            },
         )
 
         if (applies == true) {
@@ -556,11 +575,14 @@ class UnityAdsAdapter : PartnerAdapter {
     override fun setCcpaConsent(
         context: Context,
         hasGrantedCcpaConsent: Boolean,
-        privacyString: String
+        privacyString: String,
     ) {
         PartnerLogController.log(
-            if (hasGrantedCcpaConsent) CCPA_CONSENT_GRANTED
-            else CCPA_CONSENT_DENIED
+            if (hasGrantedCcpaConsent) {
+                CCPA_CONSENT_GRANTED
+            } else {
+                CCPA_CONSENT_DENIED
+            },
         )
 
         val gdprMetaData = MetaData(context)
@@ -574,10 +596,16 @@ class UnityAdsAdapter : PartnerAdapter {
      * @param context The current [Context].
      * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
      */
-    override fun setUserSubjectToCoppa(context: Context, isSubjectToCoppa: Boolean) {
+    override fun setUserSubjectToCoppa(
+        context: Context,
+        isSubjectToCoppa: Boolean,
+    ) {
         PartnerLogController.log(
-            if (isSubjectToCoppa) COPPA_SUBJECT
-            else COPPA_NOT_SUBJECT
+            if (isSubjectToCoppa) {
+                COPPA_SUBJECT
+            } else {
+                COPPA_NOT_SUBJECT
+            },
         )
 
         val coppaMetaData = MetaData(context)
@@ -624,13 +652,14 @@ class UnityAdsAdapter : PartnerAdapter {
      *
      * @return The corresponding [ChartboostMediationError].
      */
-    private fun getChartboostMediationError(error: Any) = when (error) {
-        UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_AD_BLOCKER_DETECTED
-        UnityAdsLoadError.NO_FILL -> ChartboostMediationError.CM_LOAD_FAILURE_NO_FILL
-        UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
-        UnityAdsShowError.NO_CONNECTION -> ChartboostMediationError.CM_NO_CONNECTIVITY
-        UnityAdsLoadError.TIMEOUT -> ChartboostMediationError.CM_LOAD_FAILURE_TIMEOUT
-        UnityAdsShowError.TIMEOUT -> ChartboostMediationError.CM_SHOW_FAILURE_TIMEOUT
-        else -> ChartboostMediationError.CM_PARTNER_ERROR
-    }
+    private fun getChartboostMediationError(error: Any) =
+        when (error) {
+            UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_AD_BLOCKER_DETECTED
+            UnityAdsLoadError.NO_FILL -> ChartboostMediationError.CM_LOAD_FAILURE_NO_FILL
+            UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
+            UnityAdsShowError.NO_CONNECTION -> ChartboostMediationError.CM_NO_CONNECTIVITY
+            UnityAdsLoadError.TIMEOUT -> ChartboostMediationError.CM_LOAD_FAILURE_TIMEOUT
+            UnityAdsShowError.TIMEOUT -> ChartboostMediationError.CM_SHOW_FAILURE_TIMEOUT
+            else -> ChartboostMediationError.CM_PARTNER_ERROR
+        }
 }
