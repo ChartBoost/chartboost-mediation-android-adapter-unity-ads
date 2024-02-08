@@ -246,14 +246,10 @@ class UnityAdsAdapter : PartnerAdapter {
 
         return suspendCancellableCoroutine { continuation ->
             fun resumeOnce(result: Result<PartnerAd>) {
-                val weakContinuationRef = WeakReference(continuation)
-                weakContinuationRef.get()?.let {
-                    if (it.isActive) {
-                        it.resume(result)
-                    }
-                } ?: run {
-                    PartnerLogController.log(SHOW_FAILED, "Unable to resume continuation once. Continuation is null.")
-                }            }
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
 
             val ad =
                 BannerView(
