@@ -332,12 +332,6 @@ class UnityAdsAdapter : PartnerAdapter {
         listeners[request.identifier] = listener
 
         return suspendCancellableCoroutine { continuation ->
-            fun resumeOnce(result: Result<PartnerAd>) {
-                if (continuation.isActive) {
-                    continuation.resume(result)
-                }
-            }
-
             UnityAds.load(
                 request.partnerPlacement,
                 InterstitialAdLoadListener(
@@ -403,17 +397,6 @@ class UnityAdsAdapter : PartnerAdapter {
         readinessTracker[partnerAd.request.partnerPlacement] = false
 
         return suspendCancellableCoroutine { continuation ->
-            fun resumeOnce(result: Result<PartnerAd>) {
-                val weakContinuationRef = WeakReference(continuation)
-                weakContinuationRef.get()?.let {
-                    if (it.isActive) {
-                        it.resume(result)
-                    }
-                } ?: run {
-                    PartnerLogController.log(SHOW_FAILED, "Unable to resume continuation once. Continuation is null.")
-                }
-            }
-
             UnityAds.show(
                 context as Activity,
                 partnerAd.request.partnerPlacement,
