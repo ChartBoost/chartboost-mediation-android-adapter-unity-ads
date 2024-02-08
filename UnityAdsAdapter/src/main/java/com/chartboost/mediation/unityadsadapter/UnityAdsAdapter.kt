@@ -648,7 +648,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(
-                    LOAD_FAILED,
+                    SHOW_FAILED,
                     "Unable to resume continuation. Continuation is null."
                 )
             }
