@@ -340,7 +340,7 @@ class UnityAdsAdapter : PartnerAdapter {
 
             UnityAds.load(
                 request.partnerPlacement,
-                InterstitialAdListener(
+                InterstitialAdLoadListener(
                     WeakReference(continuation),
                     request = request,
                     listener = listener,
@@ -417,65 +417,11 @@ class UnityAdsAdapter : PartnerAdapter {
             UnityAds.show(
                 context as Activity,
                 partnerAd.request.partnerPlacement,
-                object : IUnityAdsShowListener {
-                    override fun onUnityAdsShowFailure(
-                        placementId: String,
-                        error: UnityAdsShowError,
-                        message: String,
-                    ) {
-                        PartnerLogController.log(
-                            SHOW_FAILED,
-                            "Error: ${error.name}. Message: $message",
-                        )
-                        resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
-                    }
-
-                    override fun onUnityAdsShowStart(placementId: String) {
-                        PartnerLogController.log(SHOW_SUCCEEDED)
-                        listener?.onPartnerAdImpression(partnerAd)
-                            ?: PartnerLogController.log(
-                                CUSTOM,
-                                "Unable to fire onPartnerAdImpression for Unity Ads adapter.",
-                            )
-                        resumeOnce(Result.success(partnerAd))
-                    }
-
-                    override fun onUnityAdsShowClick(placementId: String) {
-                        PartnerLogController.log(DID_CLICK)
-                        listener?.onPartnerAdClicked(partnerAd) ?: run {
-                            PartnerLogController.log(
-                                CUSTOM,
-                                "Unable to fire onPartnerAdClicked for Unity Ads adapter. " +
-                                    "Listener is null.",
-                            )
-                        }
-                    }
-
-                    override fun onUnityAdsShowComplete(
-                        placementId: String,
-                        state: UnityAds.UnityAdsShowCompletionState,
-                    ) {
-                        readinessTracker[partnerAd.request.partnerPlacement] = false
-                        if (partnerAd.request.format == AdFormat.REWARDED &&
-                            state == UnityAds.UnityAdsShowCompletionState.COMPLETED
-                        ) {
-                            PartnerLogController.log(DID_REWARD)
-                            listener?.onPartnerAdRewarded(partnerAd)
-                                ?: PartnerLogController.log(
-                                    CUSTOM,
-                                    "Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
-                                        "Listener is null.",
-                                )
-                        }
-
-                        PartnerLogController.log(DID_DISMISS)
-                        listener?.onPartnerAdDismissed(partnerAd, null) ?: PartnerLogController.log(
-                            CUSTOM,
-                            "Unable to fire onPartnerAdClosed for Unity Ads adapter. " +
-                                "Listener is null.",
-                        )
-                    }
-                },
+                InterstitialAdShowListener(
+                    WeakReference(continuation),
+                    listener = listener,
+                    partnerAd = partnerAd
+                )
             )
         }
     }
@@ -649,13 +595,13 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
-     * Callback for interstitial ads.
+     * Callback for loading interstitial ads.
      *
      * @param continuationRef A [WeakReference] to the [CancellableContinuation] to be resumed once the ad is shown.
      * @param request A [PartnerAdLoadRequest] object containing the request.
      * @param listener A [PartnerAdListener] to be notified of ad events.
      */
-    private class InterstitialAdListener(
+    private class InterstitialAdLoadListener(
         private val continuationRef: WeakReference<CancellableContinuation<Result<PartnerAd>>>,
         private val request: PartnerAdLoadRequest,
         private val listener: PartnerAdListener,
@@ -697,6 +643,90 @@ class UnityAdsAdapter : PartnerAdapter {
 
             PartnerLogController.log(LOAD_FAILED, "Error: ${error.name}. Message: $message")
             resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
+        }
+    }
+
+    /**
+     * Callback for showing interstitial ads.
+     *
+     * @param continuationRef A [WeakReference] to the [CancellableContinuation] to be resumed once the ad is shown.
+     * @param listener A [PartnerAdListener] to be notified of ad events.
+     * @param partnerAd A [PartnerAd] object containing the ad to show.
+     */
+    private class InterstitialAdShowListener(
+        private val continuationRef: WeakReference<CancellableContinuation<Result<PartnerAd>>>,
+        private val listener: PartnerAdListener?,
+        private val partnerAd: PartnerAd,
+    ): IUnityAdsShowListener {
+        fun resumeOnce(result: Result<PartnerAd>) {
+            continuationRef.get()?.let {
+                if (it.isActive) {
+                    it.resume(result)
+                }
+            } ?: run {
+                PartnerLogController.log(
+                    LOAD_FAILED,
+                    "Unable to resume continuation. Continuation is null."
+                )
+            }
+        }
+
+        override fun onUnityAdsShowFailure(
+            placementId: String,
+            error: UnityAdsShowError,
+            message: String,
+        ) {
+            PartnerLogController.log(
+                SHOW_FAILED,
+                "Error: ${error.name}. Message: $message",
+            )
+            resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(error))))
+        }
+
+        override fun onUnityAdsShowStart(placementId: String) {
+            PartnerLogController.log(SHOW_SUCCEEDED)
+            listener?.onPartnerAdImpression(partnerAd)
+                ?: PartnerLogController.log(
+                    CUSTOM,
+                    "Unable to fire onPartnerAdImpression for Unity Ads adapter.",
+                )
+            resumeOnce(Result.success(partnerAd))
+        }
+
+        override fun onUnityAdsShowClick(placementId: String) {
+            PartnerLogController.log(DID_CLICK)
+            listener?.onPartnerAdClicked(partnerAd) ?: run {
+                PartnerLogController.log(
+                    CUSTOM,
+                    "Unable to fire onPartnerAdClicked for Unity Ads adapter. " +
+                            "Listener is null.",
+                )
+            }
+        }
+
+        override fun onUnityAdsShowComplete(
+            placementId: String,
+            state: UnityAds.UnityAdsShowCompletionState,
+        ) {
+            readinessTracker[partnerAd.request.partnerPlacement] = false
+            if (partnerAd.request.format == AdFormat.REWARDED &&
+                state == UnityAds.UnityAdsShowCompletionState.COMPLETED
+            ) {
+                PartnerLogController.log(DID_REWARD)
+                listener?.onPartnerAdRewarded(partnerAd)
+                    ?: PartnerLogController.log(
+                        CUSTOM,
+                        "Unable to fire onPartnerAdRewarded for Unity Ads adapter. " +
+                                "Listener is null.",
+                    )
+            }
+
+            PartnerLogController.log(DID_DISMISS)
+            listener?.onPartnerAdDismissed(partnerAd, null) ?: PartnerLogController.log(
+                CUSTOM,
+                "Unable to fire onPartnerAdClosed for Unity Ads adapter. " +
+                        "Listener is null.",
+            )
         }
     }
 }
