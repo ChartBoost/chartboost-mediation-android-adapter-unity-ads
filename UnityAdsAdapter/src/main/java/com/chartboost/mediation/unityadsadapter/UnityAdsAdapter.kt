@@ -1,6 +1,6 @@
 /*
  * Copyright 2023-2024 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -10,10 +10,10 @@ package com.chartboost.mediation.unityadsadapter
 import android.app.Activity
 import android.content.Context
 import android.util.Size
-import com.chartboost.heliumsdk.HeliumSdk
-import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.PartnerLogController
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
+import com.chartboost.chartboostmediationsdk.domain.*
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.*
 import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.IUnityAdsLoadListener
 import com.unity3d.ads.IUnityAdsShowListener
@@ -622,7 +622,7 @@ class UnityAdsAdapter : PartnerAdapter {
     private fun setMediationMetadata(context: Context) {
         val mediationMetaData = MediationMetaData(context)
         mediationMetaData.setName("Chartboost")
-        mediationMetaData.setVersion(HeliumSdk.getVersion())
+        mediationMetaData.setVersion(ChartboostMediationSdk.getVersion())
         mediationMetaData["adapter_version"] = adapterVersion
         mediationMetaData.commit()
     }
