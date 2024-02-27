@@ -354,13 +354,13 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Attempt to show the currently loaded Unity Ads ad.
      *
-     * @param context The current [Context]
+     * @param activity The current [Activity]
      * @param partnerAd The [PartnerAd] object containing the ad to be shown.
      *
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
     override suspend fun show(
-        context: Context,
+        activity: Activity,
         partnerAd: PartnerAd,
     ): Result<PartnerAd> {
         PartnerLogController.log(SHOW_STARTED)
@@ -375,7 +375,7 @@ class UnityAdsAdapter : PartnerAdapter {
             }
             AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key ->
                 showFullscreenAd(
-                    context,
+                    activity,
                     partnerAd,
                     listener,
                 )
@@ -389,16 +389,16 @@ class UnityAdsAdapter : PartnerAdapter {
     /**
      * Attempt to show a Unity Ads fullscreen ad.
      *
-     * @param context The current [Context].
+     * @param activity The current [Activity].
      * @param partnerAd The [PartnerAd] object containing the Unity Ads ad to be shown.
      * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      */
     private suspend fun showFullscreenAd(
-        context: Context,
+        activity: Activity,
         partnerAd: PartnerAd,
         listener: PartnerAdListener?,
     ): Result<PartnerAd> {
-        if (!readyToShow(context, partnerAd.request.partnerPlacement)) {
+        if (!readyToShow(partnerAd.request.partnerPlacement)) {
             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_INVALID_PARTNER_PLACEMENT))
         }
 
@@ -412,7 +412,7 @@ class UnityAdsAdapter : PartnerAdapter {
             }
 
             UnityAds.show(
-                context as Activity,
+                activity,
                 partnerAd.request.partnerPlacement,
                 object : IUnityAdsShowListener {
                     override fun onUnityAdsShowFailure(
@@ -481,20 +481,12 @@ class UnityAdsAdapter : PartnerAdapter {
      * Check if the currently loaded Unity Ads ad is ready to be shown. This is only applicable to
      * fullscreen ads, as banner ads do not have a separate "show" mechanism.
      *
-     * @param context The current [Context].
      * @param placement The Unity Ads placement associated with the current ad.
      *
      * @return True if the ad is ready to be shown, false otherwise.
      */
-    private fun readyToShow(
-        context: Context,
-        placement: String,
-    ): Boolean {
+    private fun readyToShow(placement: String): Boolean {
         return when {
-            context !is Activity -> {
-                PartnerLogController.log(SHOW_FAILED, "Context is not an Activity instance.")
-                false
-            }
             readinessTracker[placement] != true -> {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not ready.")
                 false
