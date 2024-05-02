@@ -14,6 +14,7 @@ import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
 import com.chartboost.chartboostmediationsdk.domain.*
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.mediation.unityadsadapter.UnityAdsAdapterConfiguration.adapterVersion
 import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.IUnityAdsLoadListener
 import com.unity3d.ads.IUnityAdsShowListener
@@ -37,23 +38,15 @@ import kotlin.coroutines.resume
 class UnityAdsAdapter : PartnerAdapter {
     companion object {
         /**
-         * Flag that can optionally be set to enable Unity Ads debug mode.
-         */
-        var debugMode = UnityAds.debugMode
-            set(value) {
-                field = value
-                UnityAds.debugMode = value
-                PartnerLogController.log(
-                    CUSTOM,
-                    "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.",
-                )
-            }
-
-        /**
          * Key for parsing the Unity Ads game ID.
          */
         private const val GAME_ID_KEY = "game_id"
     }
+
+    /**
+     * The Unity Ads adapter configuration.
+     */
+    override var configuration: PartnerAdapterConfiguration = UnityAdsAdapterConfiguration
 
     /**
      * A map of Chartboost Mediation's listeners for the corresponding load identifier.
@@ -64,39 +57,6 @@ class UnityAdsAdapter : PartnerAdapter {
      * Unity Ads does not have a "ready" check, so we need to manually keep track of it, keyed by the Unity placement ID.
      */
     private var readinessTracker = mutableMapOf<String, Boolean>()
-
-    /**
-     * Get the Unity Ads adapter version.
-     *
-     * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Chartboost Mediation:
-     *
-     * Chartboost Mediation.Partner.Adapter
-     *
-     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
-     * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
-     * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
-     */
-    override val adapterVersion: String
-        get() = BuildConfig.CHARTBOOST_MEDIATION_UNITY_ADS_ADAPTER_VERSION
-
-    /**
-     * Get the Unity Ads SDK version.
-     */
-    override val partnerSdkVersion: String
-        get() = UnityAds.version
-
-    /**
-     * Get the partner name for internal uses.
-     */
-    override val partnerId: String
-        get() = "unity"
-
-    /**
-     * Get the partner name for external uses.
-     */
-    override val partnerDisplayName: String
-        get() = "Unity Ads"
 
     /**
      * Initialize the Unity Ads SDK so that it is ready to request ads.
