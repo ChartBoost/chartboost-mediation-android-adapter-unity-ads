@@ -518,6 +518,27 @@ class UnityAdsAdapter : PartnerAdapter {
     }
 
     /**
+     * Set Unity Ads user's consent value using a boolean.
+     * This is for publishers to manually set the consent status.
+     * This uses CONSENT_GIVEN for true and CONSENT_DECLINED for false.
+     *
+     * @param context a context that will be passed to the SharedPreferences to set the user consent.
+     * @param applies True if GDPR applies, false otherwise.
+     * @param consented whether or not the user has consented.
+     */
+    fun setGdpr(
+        context: Context,
+        applies: Boolean?,
+        consented: Boolean,
+    ) {
+        setGdpr(
+            context,
+            applies,
+            if (consented) GdprConsentStatus.GDPR_CONSENT_GRANTED else GdprConsentStatus.GDPR_CONSENT_DENIED,
+        )
+    }
+
+    /**
      * Notify Unity Ads of the user's CCPA consent status, if applicable.
      *
      * @param context The current [Context].
@@ -540,6 +561,19 @@ class UnityAdsAdapter : PartnerAdapter {
         val gdprMetaData = MetaData(context)
         gdprMetaData["privacy.consent"] = hasGrantedCcpaConsent
         gdprMetaData.commit()
+    }
+
+    /**
+     * Notify Unity Ads of the user's CCPA consent status, if applicable.
+     *
+     * @param context The current [Context].
+     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
+     */
+    fun setCcpaConsent(
+        context: Context,
+        hasGrantedCcpaConsent: Boolean
+    ) {
+        setCcpaConsent(context, hasGrantedCcpaConsent, "")
     }
 
     /**
