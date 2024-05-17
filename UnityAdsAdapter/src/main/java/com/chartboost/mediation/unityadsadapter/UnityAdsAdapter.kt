@@ -110,7 +110,7 @@ class UnityAdsAdapter : PartnerAdapter {
                                 )
                                 resumeOnce(
                                     Result.failure(
-                                        ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN),
+                                        ChartboostMediationAdException(ChartboostMediationError.InitializationError.Unknown),
                                     ),
                                 )
                             }
@@ -119,7 +119,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 }
             } ?: run {
             PartnerLogController.log(SETUP_FAILED, "Missing game_id value.")
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.InvalidCredentials))
         }
     }
 
@@ -162,7 +162,7 @@ class UnityAdsAdapter : PartnerAdapter {
             AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key -> loadFullscreenAd(request, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.UnsupportedAdFormat))
             }
         }
     }
@@ -181,7 +181,7 @@ class UnityAdsAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         if (context !is Activity) {
             PartnerLogController.log(LOAD_FAILED, "Context is not an Activity instance.")
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_ACTIVITY_NOT_FOUND))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.ActivityNotFound))
         }
 
         return suspendCancellableCoroutine { continuation ->
@@ -248,7 +248,7 @@ class UnityAdsAdapter : PartnerAdapter {
                             "Error: ${errorInfo.errorCode}. " +
                                 "Message: ${errorInfo.errorMessage}",
                         )
-                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNKNOWN)))
+                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.Unknown)))
                     }
 
                     override fun onBannerLeftApplication(bannerView: BannerView) {}
@@ -341,7 +341,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 )
             else -> {
                 PartnerLogController.log(SHOW_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.UnsupportedAdFormat))
             }
         }
     }
@@ -359,7 +359,7 @@ class UnityAdsAdapter : PartnerAdapter {
         listener: PartnerAdListener?,
     ): Result<PartnerAd> {
         if (!readyToShow(partnerAd.request.partnerPlacement)) {
-            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_INVALID_PARTNER_PLACEMENT))
+            return Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.InvalidPartnerPlacement))
         }
 
         readinessTracker[partnerAd.request.partnerPlacement] = false
@@ -571,7 +571,7 @@ class UnityAdsAdapter : PartnerAdapter {
      */
     fun setCcpaConsent(
         context: Context,
-        hasGrantedCcpaConsent: Boolean
+        hasGrantedCcpaConsent: Boolean,
     ) {
         setCcpaConsent(context, hasGrantedCcpaConsent, "")
     }
@@ -640,12 +640,12 @@ class UnityAdsAdapter : PartnerAdapter {
      */
     private fun getChartboostMediationError(error: Any) =
         when (error) {
-            UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_AD_BLOCKER_DETECTED
-            UnityAdsLoadError.NO_FILL -> ChartboostMediationError.CM_LOAD_FAILURE_NO_FILL
-            UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
-            UnityAdsShowError.NO_CONNECTION -> ChartboostMediationError.CM_NO_CONNECTIVITY
-            UnityAdsLoadError.TIMEOUT -> ChartboostMediationError.CM_LOAD_FAILURE_TIMEOUT
-            UnityAdsShowError.TIMEOUT -> ChartboostMediationError.CM_SHOW_FAILURE_TIMEOUT
-            else -> ChartboostMediationError.CM_PARTNER_ERROR
+            UnityAds.UnityAdsInitializationError.AD_BLOCKER_DETECTED -> ChartboostMediationError.InitializationError.AdBlockerDetected
+            UnityAdsLoadError.NO_FILL -> ChartboostMediationError.LoadError.NoFill
+            UnityAdsLoadError.INITIALIZE_FAILED, UnityAdsShowError.NOT_INITIALIZED -> ChartboostMediationError.InitializationError.Unknown
+            UnityAdsShowError.NO_CONNECTION -> ChartboostMediationError.OtherError.NoConnectivity
+            UnityAdsLoadError.TIMEOUT -> ChartboostMediationError.LoadError.AdRequestTimeout
+            UnityAdsShowError.TIMEOUT -> ChartboostMediationError.ShowError.Timeout
+            else -> ChartboostMediationError.OtherError.PartnerError
         }
 }

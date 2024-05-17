@@ -42,8 +42,8 @@ object UnityAdsAdapterConfiguration : PartnerAdapterConfiguration {
             field = value
             UnityAds.debugMode = value
             PartnerLogController.log(
-                    PartnerLogController.PartnerAdapterEvents.CUSTOM,
-                    "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.",
+                PartnerLogController.PartnerAdapterEvents.CUSTOM,
+                "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.",
             )
         }
 }
