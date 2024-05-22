@@ -13,7 +13,33 @@ import android.util.Size
 import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
 import com.chartboost.chartboostmediationsdk.domain.*
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
-import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.CUSTOM
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_CLICK
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_DISMISS
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_REWARD
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_TRACK_IMPRESSION
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_DENIED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_GRANTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_UNKNOWN
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_NOT_APPLICABLE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_NOT_UNDERAGE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_UNDERAGE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_DENIED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_GRANTED
+import com.chartboost.core.consent.*
 import com.chartboost.mediation.unityadsadapter.UnityAdsAdapterConfiguration.adapterVersion
 import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.IUnityAdsLoadListener
@@ -67,7 +93,7 @@ class UnityAdsAdapter : PartnerAdapter {
     override suspend fun setUp(
         context: Context,
         partnerConfiguration: PartnerConfiguration,
-    ): Result<Unit> {
+    ): Result<Map<String, Any>> {
         PartnerLogController.log(SETUP_STARTED)
 
         readinessTracker.clear()
@@ -79,7 +105,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 setMediationMetadata(context)
 
                 return suspendCancellableCoroutine { continuation ->
-                    fun resumeOnce(result: Result<Unit>) {
+                    fun resumeOnce(result: Result<Map<String, Any>>) {
                         if (continuation.isActive) {
                             continuation.resume(result)
                         }
@@ -91,13 +117,8 @@ class UnityAdsAdapter : PartnerAdapter {
                         false,
                         object : IUnityAdsInitializationListener {
                             override fun onInitializationComplete() {
-                                resumeOnce(
-                                    Result.success(
-                                        PartnerLogController.log(
-                                            SETUP_SUCCEEDED,
-                                        ),
-                                    ),
-                                )
+                                PartnerLogController.log(SETUP_SUCCEEDED)
+                                resumeOnce(Result.success(emptyMap()))
                             }
 
                             override fun onInitializationFailed(
@@ -127,17 +148,17 @@ class UnityAdsAdapter : PartnerAdapter {
      * Get a bid token if network bidding is supported.
      *
      * @param context The current [Context].
-     * @param request The [PreBidRequest] instance containing relevant data for the current bid request.
+     * @param request The [PartnerAdPreBidRequest] instance containing relevant data for the current bid request.
      *
      * @return A Map of biddable token Strings.
      */
     override suspend fun fetchBidderInformation(
         context: Context,
-        request: PreBidRequest,
-    ): Map<String, String> {
+        request: PartnerAdPreBidRequest,
+    ): Result<Map<String, String>> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
         PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
-        return emptyMap()
+        return Result.success(emptyMap())
     }
 
     /**
@@ -157,9 +178,9 @@ class UnityAdsAdapter : PartnerAdapter {
         PartnerLogController.log(LOAD_STARTED)
         readinessTracker[request.partnerPlacement] = false
 
-        return when (request.format.key) {
-            AdFormat.BANNER.key, "adaptive_banner" -> loadBannerAd(context, request, partnerAdListener)
-            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key -> loadFullscreenAd(request, partnerAdListener)
+        return when (request.format) {
+            PartnerAdFormats.BANNER -> loadBannerAd(context, request, partnerAdListener)
+            PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED -> loadFullscreenAd(request, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
                 Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.UnsupportedAdFormat))
@@ -195,7 +216,7 @@ class UnityAdsAdapter : PartnerAdapter {
                 BannerView(
                     context,
                     request.partnerPlacement,
-                    getUnityAdsBannerSize(request.size),
+                    getUnityAdsBannerSize(request.bannerSize?.size),
                 )
 
             ad.listener =
@@ -327,13 +348,13 @@ class UnityAdsAdapter : PartnerAdapter {
 
         val listener = listeners.remove(partnerAd.request.identifier)
 
-        return when (partnerAd.request.format.key) {
+        return when (partnerAd.request.format) {
             // Banner ads do not have a separate "show" mechanism.
-            AdFormat.BANNER.key, "adaptive_banner" -> {
+            PartnerAdFormats.BANNER -> {
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
-            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key ->
+            PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED ->
                 showFullscreenAd(
                     activity,
                     partnerAd,
@@ -413,7 +434,7 @@ class UnityAdsAdapter : PartnerAdapter {
                         state: UnityAds.UnityAdsShowCompletionState,
                     ) {
                         readinessTracker[partnerAd.request.partnerPlacement] = false
-                        if (partnerAd.request.format == AdFormat.REWARDED &&
+                        if (partnerAd.request.format == PartnerAdFormats.REWARDED &&
                             state == UnityAds.UnityAdsShowCompletionState.COMPLETED
                         ) {
                             PartnerLogController.log(DID_REWARD)
@@ -481,124 +502,69 @@ class UnityAdsAdapter : PartnerAdapter {
         return Result.success(partnerAd)
     }
 
-    /**
-     * Notify the Unity Ads SDK of the GDPR applicability and consent status.
-     *
-     * @param context The current [Context].
-     * @param applies True if GDPR applies, false otherwise.
-     * @param gdprConsentStatus The user's GDPR consent status.
-     */
-    override fun setGdpr(
+    override fun setConsents(
         context: Context,
-        applies: Boolean?,
-        gdprConsentStatus: GdprConsentStatus,
+        consents: Map<ConsentKey, ConsentValue>,
+        modifiedKeys: Set<ConsentKey>
     ) {
-        PartnerLogController.log(
-            when (applies) {
-                true -> GDPR_APPLICABLE
-                false -> GDPR_NOT_APPLICABLE
-                else -> GDPR_UNKNOWN
-            },
-        )
+        consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.let {
+            if (it == ConsentValues.DOES_NOT_APPLY) {
+                PartnerLogController.log(GDPR_NOT_APPLICABLE)
+                return@let
+            }
 
-        PartnerLogController.log(
-            when (gdprConsentStatus) {
-                GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
-                GdprConsentStatus.GDPR_CONSENT_GRANTED -> GDPR_CONSENT_GRANTED
-                GdprConsentStatus.GDPR_CONSENT_DENIED -> GDPR_CONSENT_DENIED
-            },
-        )
-
-        if (applies == true) {
+            PartnerLogController.log(
+                when (it) {
+                    ConsentValues.GRANTED -> GDPR_CONSENT_GRANTED
+                    ConsentValues.DENIED -> GDPR_CONSENT_DENIED
+                    else -> GDPR_CONSENT_UNKNOWN
+                },
+            )
             MetaData(context).apply {
-                this["gdpr.consent"] = gdprConsentStatus == GdprConsentStatus.GDPR_CONSENT_GRANTED
+                this["gdpr.consent"] = it == ConsentValues.GRANTED
                 commit()
             }
+        }
+
+        consents[ConsentKeys.USP]?.let {
+            val hasGrantedUspConsent = ConsentManagementPlatform.getUspConsentFromUspString(it)
+            PartnerLogController.log(
+                if (hasGrantedUspConsent) {
+                    USP_CONSENT_GRANTED
+                } else {
+                    USP_CONSENT_DENIED
+                },
+            )
+
+            val gdprMetaData = MetaData(context)
+            gdprMetaData["privacy.consent"] = hasGrantedUspConsent
+            gdprMetaData.commit()
         }
     }
 
     /**
-     * Set Unity Ads user's consent value using a boolean.
-     * This is for publishers to manually set the consent status.
-     * This uses CONSENT_GIVEN for true and CONSENT_DECLINED for false.
-     *
-     * @param context a context that will be passed to the SharedPreferences to set the user consent.
-     * @param applies True if GDPR applies, false otherwise.
-     * @param consented whether or not the user has consented.
-     */
-    fun setGdpr(
-        context: Context,
-        applies: Boolean?,
-        consented: Boolean,
-    ) {
-        setGdpr(
-            context,
-            applies,
-            if (consented) GdprConsentStatus.GDPR_CONSENT_GRANTED else GdprConsentStatus.GDPR_CONSENT_DENIED,
-        )
-    }
-
-    /**
-     * Notify Unity Ads of the user's CCPA consent status, if applicable.
+     * Notify Unity Ads if the user is underage.
      *
      * @param context The current [Context].
-     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
-     * @param privacyString The CCPA privacy string.
+     * @param isUserUnderage True if the user is underage, false otherwise.
      */
-    override fun setCcpaConsent(
+    override fun setIsUserUnderage(
         context: Context,
-        hasGrantedCcpaConsent: Boolean,
-        privacyString: String,
+        isUserUnderage: Boolean,
     ) {
         PartnerLogController.log(
-            if (hasGrantedCcpaConsent) {
-                CCPA_CONSENT_GRANTED
+            if (isUserUnderage) {
+                USER_IS_UNDERAGE
             } else {
-                CCPA_CONSENT_DENIED
-            },
-        )
-
-        val gdprMetaData = MetaData(context)
-        gdprMetaData["privacy.consent"] = hasGrantedCcpaConsent
-        gdprMetaData.commit()
-    }
-
-    /**
-     * Notify Unity Ads of the user's CCPA consent status, if applicable.
-     *
-     * @param context The current [Context].
-     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
-     */
-    fun setCcpaConsent(
-        context: Context,
-        hasGrantedCcpaConsent: Boolean,
-    ) {
-        setCcpaConsent(context, hasGrantedCcpaConsent, "")
-    }
-
-    /**
-     * Notify Unity Ads of the COPPA subjectivity.
-     *
-     * @param context The current [Context].
-     * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
-     */
-    override fun setUserSubjectToCoppa(
-        context: Context,
-        isSubjectToCoppa: Boolean,
-    ) {
-        PartnerLogController.log(
-            if (isSubjectToCoppa) {
-                COPPA_SUBJECT
-            } else {
-                COPPA_NOT_SUBJECT
+                USER_IS_NOT_UNDERAGE
             },
         )
 
         val coppaMetaData = MetaData(context)
 
-        // True if the user is over the age limit, meaning that the subject is not subject to COPPA.
-        // False if the user is under the limit, meaning subject is subject to COPPA.
-        coppaMetaData["privacy.useroveragelimit"] = !isSubjectToCoppa
+        // True if the user is over the age limit, meaning that the subject is not underage.
+        // False if the user is under the limit, meaning subject is underage.
+        coppaMetaData["privacy.useroveragelimit"] = !isUserUnderage
         coppaMetaData.commit()
     }
 
