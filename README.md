@@ -13,7 +13,7 @@ The Chartboost Mediation Unity Ads adapter mediates Unity Ads via the Chartboost
 
 In your `build.gradle`, add the following entry:
 ```
-    implementation "com.chartboost:chartboost-mediation-adapter-unity-ads:4.4.9.2.1"
+    implementation "com.chartboost:chartboost-mediation-adapter-unity-ads:5.4.11.3.0"
 ```
 
 ## Contributions
