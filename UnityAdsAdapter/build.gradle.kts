@@ -18,13 +18,20 @@ plugins {
 repositories {
     google()
     mavenCentral()
-    maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
+    maven("https://cboost.jfrog.io/artifactory/private-chartboost-core/") {
+        credentials {
+            username = System.getenv("JFROG_USER")
+            password = System.getenv("JFROG_PASS")
+        }
+    }
     maven("https://cboost.jfrog.io/artifactory/private-chartboost-mediation/") {
         credentials {
             username = System.getenv("JFROG_USER")
             password = System.getenv("JFROG_PASS")
         }
     }
+    maven("https://cboost.jfrog.io/artifactory/chartboost-core/")
+    maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
 }
 
 android {
@@ -35,7 +42,7 @@ android {
         minSdk = 21
         targetSdk = 33
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.4.9.2.1"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.4.11.3.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_UNITY_ADS_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -61,6 +68,15 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
 dependencies {
@@ -68,10 +84,10 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:4.0.0")
+    "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
 
     // Partner SDK
-    implementation("com.unity3d.ads:unity-ads:4.9.2")
+    implementation("com.unity3d.ads:unity-ads:4.11.3")
 
     // Adapter Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
