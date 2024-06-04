@@ -505,7 +505,7 @@ class UnityAdsAdapter : PartnerAdapter {
     override fun setConsents(
         context: Context,
         consents: Map<ConsentKey, ConsentValue>,
-        modifiedKeys: Set<ConsentKey>
+        modifiedKeys: Set<ConsentKey>,
     ) {
         consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.let {
             if (it == ConsentValues.DOES_NOT_APPLY) {
