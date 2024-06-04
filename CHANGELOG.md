@@ -5,10 +5,7 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 
 ### 5.4.12.0.0
 - This version of the adapter has been certified with Unity Ads SDK 4.12.0.
-
-### 5.4.11.3.0
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
-- This version of the adapter has been certified with Unity Ads SDK 4.11.3.
 
 ### 4.4.9.2.1
 - Add function allow publishers to set a boolean consent value for the Unity Ads SDK consent info.
