@@ -508,6 +508,9 @@ class UnityAdsAdapter : PartnerAdapter {
         modifiedKeys: Set<ConsentKey>,
     ) {
         consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.let {
+            if (UnityAdsAdapterConfiguration.isGdprConsentOverridden) {
+                return@let
+            }
             if (it == ConsentValues.DOES_NOT_APPLY) {
                 PartnerLogController.log(GDPR_NOT_APPLICABLE)
                 return@let
@@ -527,6 +530,9 @@ class UnityAdsAdapter : PartnerAdapter {
         }
 
         consents[ConsentKeys.USP]?.let {
+            if (UnityAdsAdapterConfiguration.isPrivacyConsentOverridden) {
+                return@let
+            }
             val hasGrantedUspConsent = ConsentManagementPlatform.getUspConsentFromUspString(it)
             PartnerLogController.log(
                 if (hasGrantedUspConsent) {

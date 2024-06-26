@@ -1,8 +1,12 @@
 package com.chartboost.mediation.unityadsadapter
 
+import android.content.Context
 import com.chartboost.chartboostmediationsdk.domain.PartnerAdapterConfiguration
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.CUSTOM
+import com.chartboost.core.consent.ConsentValues
 import com.unity3d.ads.UnityAds
+import com.unity3d.ads.metadata.MetaData
 
 object UnityAdsAdapterConfiguration : PartnerAdapterConfiguration {
     /**
@@ -42,8 +46,54 @@ object UnityAdsAdapterConfiguration : PartnerAdapterConfiguration {
             field = value
             UnityAds.debugMode = value
             PartnerLogController.log(
-                PartnerLogController.PartnerAdapterEvents.CUSTOM,
+                CUSTOM,
                 "Unity Ads debug mode is ${if (value) "enabled" else "disabled"}.",
             )
         }
+
+    /**
+     * Use to manually set the GDPR consent status on the Unity Ads SDK.
+     * This is generally unnecessary as the Mediation SDK will set the consent status automatically
+     * based on the latest consent info.
+     *
+     * @param context The Android Context.
+     * @param gdprConsentGiven True if GDPR consent has been given, false otherwise.
+     */
+    fun setGdprConsentOverride(context: Context, gdprConsentGiven: Boolean) {
+        isGdprConsentOverridden = true
+        // See https://docs.unity.com/ads/en/manual/GDPRCompliance
+        MetaData(context).apply {
+            this["gdpr.consent"] = gdprConsentGiven
+            commit()
+        }
+        PartnerLogController.log(CUSTOM, "UnityAds GDPR consent status overridden to $gdprConsentGiven")
+    }
+
+    /**
+     * Use to manually set the CCPA privacy consent status on the Unity Ads SDK.
+     * This is generally unnecessary as the Mediation SDK will set the consent status automatically
+     * based on the latest consent info.
+     *
+     * @param context The Android Context.
+     * @param privacyConsentGiven True if privacy consent has been given, false otherwise.
+     */
+    fun setPrivacyConsentOverride(context: Context, privacyConsentGiven: Boolean) {
+        isPrivacyConsentOverridden = true
+        // See https://docs.unity.com/ads/en/manual/CCPACompliance
+        MetaData(context).apply {
+            this["privacy.consent"] = privacyConsentGiven
+            commit()
+        }
+        PartnerLogController.log(CUSTOM, "UnityAds privacy consent status overridden to $privacyConsentGiven")
+    }
+
+    /**
+     * Whether GDPR consent has been overridden by the publisher.
+     */
+    internal var isGdprConsentOverridden = false
+
+    /**
+     * Whether privacy consent has been overridden by the publisher.
+     */
+    internal var isPrivacyConsentOverridden = false
 }
