@@ -507,7 +507,9 @@ class UnityAdsAdapter : PartnerAdapter {
         consents: Map<ConsentKey, ConsentValue>,
         modifiedKeys: Set<ConsentKey>,
     ) {
-        consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.let {
+        val consent = consents[configuration.partnerId]?.takeIf { it.isNotBlank() }
+            ?: consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.takeIf { it.isNotBlank() }
+        consent?.let {
             if (UnityAdsAdapterConfiguration.isGdprConsentOverridden) {
                 return@let
             }
@@ -529,11 +531,15 @@ class UnityAdsAdapter : PartnerAdapter {
             }
         }
 
-        consents[ConsentKeys.USP]?.let {
+        val hasGrantedUspConsent =
+            consents[ConsentKeys.CCPA_OPT_IN]?.takeIf { it.isNotBlank() }
+                ?.equals(ConsentValues.GRANTED)
+                ?: consents[ConsentKeys.USP]?.takeIf { it.isNotBlank() }
+                    ?.let { ConsentManagementPlatform.getUspConsentFromUspString(it) }
+        hasGrantedUspConsent?.let {
             if (UnityAdsAdapterConfiguration.isPrivacyConsentOverridden) {
                 return@let
             }
-            val hasGrantedUspConsent = ConsentManagementPlatform.getUspConsentFromUspString(it)
             PartnerLogController.log(
                 if (hasGrantedUspConsent) {
                     USP_CONSENT_GRANTED
