@@ -3,6 +3,9 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+### 5.4.12.1.0
+- This version of the adapter supports Chartboost Mediation SDK version 5.+.
+
 ### 4.4.12.1.0
 - This version of the adapter has been certified with Unity Ads SDK 4.12.1.
 
@@ -20,6 +23,7 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 
 ### 4.4.9.2.1
 - Fix memory leaks that could occur when fullscreen ads are shown from an `Activity`.
+- Add function allow publishers to set a boolean consent value for the Unity Ads SDK consent info.
 
 ### 4.4.9.2.0
 - This version of the adapter has been certified with Unity Ads SDK 4.9.2.
