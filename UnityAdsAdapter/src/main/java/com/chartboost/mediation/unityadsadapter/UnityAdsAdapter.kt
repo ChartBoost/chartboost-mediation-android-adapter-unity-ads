@@ -120,11 +120,6 @@ class UnityAdsAdapter : PartnerAdapter {
     private val listeners = mutableMapOf<String, PartnerAdListener>()
 
     /**
-     * Unity Ads does not have a "ready" check, so we need to manually keep track of it, keyed by the Unity placement ID.
-     */
-    private var readinessTracker = mutableMapOf<String, Boolean>()
-
-    /**
      * Initialize the Unity Ads SDK so that it is ready to request ads.
      *
      * @param context The current [Context].
