@@ -5,6 +5,9 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 
 All official releases can be found on this repository's [releases page](https://github.com/ChartBoost/chartboost-mediation-android-adapter-unity-ads/releases).
 
+### 5.4.12.3.0
+- This version of the adapter has been certified with Unity Ads SDK 4.12.3.
+
 ### 5.4.12.2.0
 - This version of the adapter has been certified with Unity Ads SDK 4.12.2.
 
