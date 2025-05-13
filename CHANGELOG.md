@@ -11,6 +11,9 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.4.14.2.0
+- This version of the adapter has been certified with Unity Ads SDK 4.14.2.
+
 ### 5.4.12.5.0
 - This version of the adapter has been certified with Unity Ads SDK 4.12.5.
 
