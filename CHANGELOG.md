@@ -14,6 +14,9 @@ All official releases can be found on this repository's [releases page](https://
 ### 5.4.18.1.0
 - This version of the adapter has been certified with Unity Ads SDK 4.18.1.
 
+### 5.4.18.0.0
+- This version of the adapter has been certified with Unity Ads SDK 4.18.0.
+
 ### 5.4.17.0.0
 - This version of the adapter has been certified with Unity Ads SDK 4.17.0.
 
